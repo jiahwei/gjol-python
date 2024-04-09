@@ -1,4 +1,4 @@
-import os, shutil, json, datetime, requests, re,warnings
+import os, shutil, json, datetime, requests, re, warnings
 from lxml import etree, html
 from bs4 import BeautifulSoup
 from functools import cmp_to_key
@@ -8,6 +8,7 @@ header = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36 Edg/117.0.2045.31"
 }
 defaultFloderPath = "./archives"
+defaultTotalPath = "./total/bulletin.json"
 
 
 def has_date(string):
@@ -55,7 +56,7 @@ def getDateFormFile(filePath):
     with open(filePath, "r", encoding="utf-8") as f:
         content = f.read()
         f.close()
-    contentHtml = etree.HTML(content) # type: ignore
+    contentHtml = etree.HTML(content)  # type: ignore
     allElementList = contentHtml.xpath("//div[@class='details']//p")
     resolveDate = ""
     for element in reversed(allElementList):
@@ -96,7 +97,7 @@ def categorization(path):
     with open(path, "r", encoding="utf-8") as f:
         content = f.read()
         f.close()
-    contentHtml = etree.HTML(content) # type: ignore
+    contentHtml = etree.HTML(content)  # type: ignore
     # 通过小标题的样式切开内容
     xpathRules = [
         "//p/span[@style='color:#ff0000']/span[@style='font-size:16px']",
@@ -125,7 +126,7 @@ def categorization(path):
         partent = child.xpath("..")
         print(
             "根节点为{}".format(
-                html.tostring(partent[0], encoding="utf-8").decode("utf-8") # type: ignore
+                html.tostring(partent[0], encoding="utf-8").decode("utf-8")  # type: ignore
             )
         )
         pathQuery = "following-sibling::node()/text()"
@@ -146,6 +147,7 @@ def categorization(path):
         resolveResult.append(obj)
     return {"totalLen": totalLen, "contentArr": resolveResult}
 
+
 def categorizationByBs4(path):
     with open(path, "r", encoding="utf-8") as f:
         content = f.read()
@@ -162,11 +164,12 @@ def categorizationByBs4(path):
             "name": "span",
             "style": lambda value: value and "font-size" in value and "16px" in value,
             "string": None,
-        }
+        },
     ]
     typeList = []
     lastChildFirstTest = None
     contentArr = []
+    contentTotalArr = []
     totalLen = 0
     otherInfo = {"date": "", "authors": ""}
     for ruler in findRules:
@@ -208,21 +211,26 @@ def categorizationByBs4(path):
             day = "0{}".format(dateArr[2]) if len(dateArr[2]) < 2 else dateArr[2]
             otherInfo["date"] = "{}-{}-{}".format(year, month, day)
             otherInfo["authors"] = textArr.pop()
-            #如果存在就删除礼貌用语
-            if textArr[len(textArr) - 1] == '祝大家游戏愉快！':
+            # 如果存在就删除礼貌用语
+            if textArr[len(textArr) - 1] == "祝大家游戏愉快！":
                 textArr.pop()
-            if textArr[len(textArr) - 1] == '维护期间给您带来的不便，敬请谅解。':
-                textArr.pop()            
+            if textArr[len(textArr) - 1] == "维护期间给您带来的不便，敬请谅解。":
+                textArr.pop()
         allText = "".join(textArr)
         info = {
             "name": typeName.replace("☆", ""),
-            "content": allText,
             "leng": len(allText),
         }
         totalLen = totalLen + info["leng"]
-        contentArr.append(info)
+        contentArr.append({**info,"content": allText,})
+        contentTotalArr.append(info)
         lastChildFirstTest = typeName
-    return {"totalLen": totalLen, **otherInfo, "contentArr": contentArr}
+    return {
+        "totalLen": totalLen,
+        **otherInfo,
+        "contentArr": contentArr,
+        "contentTotalArr": contentTotalArr,
+    }
 
 
 def saveDesc(path, obj):
@@ -269,7 +277,7 @@ def getNoticeInfo(url, firstNoticeDate):
     """
     res = requests.get(url, headers=header).text
     soup = BeautifulSoup(res, "lxml")
-    allList = soup.find("div", class_="list_box").find_all("li") # type: ignore
+    allList = soup.find("div", class_="list_box").find_all("li")  # type: ignore
     res = []
     for li in allList:
         infoForA = li.a
