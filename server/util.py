@@ -75,6 +75,10 @@ creat_table("test.sqlite","""CREATE TABLE IF NOT EXISTS TEST
 #     ]
 # )
 
-# res = query("test.sqlite","SELECT * FROM TEST WHERE AGE={}".format(1))
-# print(res.fetchall()) # type: ignore
 
+con = sqlite3.connect("bulletin.sqlite")
+cur = con.cursor()
+res = cur.execute("SELECT * FROM bulletin WHERE DATE = ? " , ('2023-09-21',))
+print(res.fetchall())
+con.commit()
+con.close()
