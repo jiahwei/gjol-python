@@ -1,6 +1,6 @@
 from typing import Union, List, Optional
 from fastapi import FastAPI
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import date
 import json, sqlite3
 
@@ -21,9 +21,9 @@ class Bulletin(BaseModel):
 
 
 class DatePayload(BaseModel):
-    start_date: Optional[date]
-    end_date: Optional[date]
-    # show_all_info: bool = False
+    start_date: Optional[date] = Field(alias="startDate")
+    end_date: Optional[date] = Field(alias="endDate")
+    show_all_info: bool = Field(default=False, alias="showAllInfo")
 
 
 @app.post("/getBulletinByDate")
@@ -37,13 +37,16 @@ def get_bulletin_by_date(payload: DatePayload):
                 (payload.start_date, payload.end_date),
             )
         elif payload.start_date:
-            c.execute("SELECT DATE,TOTALLEN FROM bulletin WHERE DATE = ?", (payload.start_date,))
+            c.execute(
+                "SELECT DATE,TOTALLEN FROM bulletin WHERE DATE = ?",
+                (payload.start_date,),
+            )
         rows = c.fetchall()
         conn.close()
 
         # 数据处理
         result = [{"date": row[0], "totalLen": row[1]} for row in rows]
 
-        return  result
+        return result
     except sqlite3.Error as e:
         return {"error": str(e)}

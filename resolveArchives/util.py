@@ -222,7 +222,12 @@ def categorizationByBs4(path):
             "leng": len(allText),
         }
         totalLen = totalLen + info["leng"]
-        contentArr.append({**info,"content": allText,})
+        contentArr.append(
+            {
+                **info,
+                "content": allText,
+            }
+        )
         contentTotalArr.append(info)
         lastChildFirstTest = typeName
     return {
@@ -293,3 +298,18 @@ def getNoticeInfo(url, firstNoticeDate):
         else:
             print(infoForA.attrs["title"])
     return res
+
+
+def merge_requirements(*args):
+    all_requirements = []
+    for file in args:
+        with open(file, "r") as f:
+            all_requirements += f.read().splitlines()
+
+    # 去除重复项
+    unique_requirements = list(set(all_requirements))
+
+    # 写入新的 requirements 文件
+    with open("combined_requirements.txt", "w") as f:
+        for requirement in unique_requirements:
+            f.write(requirement + "\n")
