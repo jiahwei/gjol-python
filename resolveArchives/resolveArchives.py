@@ -3,37 +3,37 @@
 产生的结果放入desc.json中
 """
 
-from util import defaultFloderPath
+from util import DefalutFloderPath
 import os
 import time
-from util import getDefaultFloderFile, categorization, saveDesc,categorizationByBs4
+from util import get_default_floder_file, categorization, save_desc,categorization_by_bs4
 
 
 # 获取archives
-floderFiles = getDefaultFloderFile()
-print(floderFiles)
-for floderName in floderFiles:
-    if ".DS_Store" in  floderName:
-        continue
-    fileName = "{}/{}/content.html".format(defaultFloderPath, floderName)
-    descFileName = "{}/{}/desc.json".format(defaultFloderPath, floderName)
-    if os.path.exists(fileName):
-        start = time.perf_counter()
-        categorizationInfo = categorizationByBs4(fileName)
-        saveDesc(descFileName, categorizationInfo)
-        end = time.perf_counter()
-        print("{},用时{}毫秒".format(floderName,(end - start) * 1000))
+# floderFiles = get_default_floder_file()
+# print(floderFiles)
+# for floderName in floderFiles:
+#     if ".DS_Store" in  floderName:
+#         continue
+#     fileName = "{}/{}/content.html".format(DefalutFloderPath, floderName)
+#     descFileName = "{}/{}/desc.json".format(DefalutFloderPath, floderName)
+#     if os.path.exists(fileName):
+#         start = time.perf_counter()
+#         categorizationInfo = categorization_by_bs4(fileName)
+#         save_desc(descFileName, categorizationInfo)
+#         end = time.perf_counter()
+#         print("{},用时{}毫秒".format(floderName,(end - start) * 1000))
 
 
 # floderName = '2018-10-10'
-# floderName = '2020-09-30'
+# floderName = '2023-09-14'
 # print(floderName)
-# fileName = "{}/{}/content.html".format(defaultFloderPath, floderName)
-# descFileName = "{}/{}/desc.json".format(defaultFloderPath, floderName)
+# fileName = "{}/{}/content.html".format(DefalutFloderPath, floderName)
+# descFileName = "{}/{}/desc.json".format(DefalutFloderPath, floderName)
 # if os.path.exists(fileName):
 #     # categorizationInfo = categorization(fileName)
-#     categorizationInfo = categorizationByBs4(fileName)
+#     categorizationInfo = categorization_by_bs4(fileName)
 #     # print(completeHTML(fileName))
     
 #     print(categorizationInfo)
-#     # saveDesc(descFileName, categorizationInfo)
+#     # save_desc(descFileName, categorizationInfo)

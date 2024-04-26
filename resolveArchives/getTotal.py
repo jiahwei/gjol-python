@@ -3,24 +3,24 @@
 """
 
 import os, json, sqlite3
-from util import getDefaultFloderFile
-from util import defaultFloderPath, defaultTotalPath
+from util import get_default_floder_file
+from util import DefalutFloderPath, DefaultTotalPath
 
 def getTotal():
-    with open(defaultTotalPath, "r") as f:
+    with open(DefaultTotalPath, "r") as f:
         totalJson = json.load(f)
         f.close()
     return totalJson
 
 
-def saveDescToTotal(info, ignoreSave=True):
+def save_descToTotal(info, ignoreSave=True):
     totalInfo = getTotal()
     if ignoreSave and info["date"] in totalInfo["map"]:
         # print("ignoreSave,{}".format(info["date"]))
         return
     totalInfo["list"].append(info)
     totalInfo["map"][info["date"]] = info
-    with open(defaultTotalPath, "w") as f:
+    with open(DefaultTotalPath, "w") as f:
         json.dump(totalInfo, f, ensure_ascii=False)
         f.close()
 
@@ -29,18 +29,18 @@ def clean():
         "list":[],
         "map":{}
     }
-    with open(defaultTotalPath, "w") as f:
+    with open(DefaultTotalPath, "w") as f:
         json.dump(totalInfo, f, ensure_ascii=False)
         f.close()
 
 # clean()
 
 # 获取archives
-# floderFiles = getDefaultFloderFile()
+# floderFiles = get_default_floder_file()
 # for floderName in floderFiles:
 #     if ".DS_Store" in  floderName:
 #         continue
-#     descFileName = "{}/{}/desc.json".format(defaultFloderPath, floderName)
+#     descFileName = "{}/{}/desc.json".format(DefalutFloderPath, floderName)
 #     if os.path.exists(descFileName):
 #         with open(descFileName, "r") as f:
 #             content = json.load(f)
@@ -48,10 +48,10 @@ def clean():
 #             content.pop('name')
 #             content.pop("authors")            
 #             if "date" in content and content['date'] != "":
-#                 saveDescToTotal(content)
+#                 save_descToTotal(content)
 #             else:
 #                 content['date'] = floderName
-#                 saveDescToTotal(content)
+#                 save_descToTotal(content)
 #                 # raise Exception("保存失效，缺失必要参数date：{}".format(content))
 #             f.close()
 
@@ -70,23 +70,6 @@ def clean():
 #         con.rollback()
 #         print("插入多条记录失败，回滚")
 
-with open(defaultTotalPath, "r") as f:
-    totalJson = json.load(f)
-    f.close()
-con = sqlite3.connect("bulletin.sqlite")
-cur = con.cursor()
-for data in totalJson["list"]:
-    contentTotalArr = data["contentTotalArr"] if 'contentTotalArr' in data else []
-    json_data = json.dumps(contentTotalArr) 
-    cur.execute(
-        """INSERT INTO bulletin (DATE, totalLen, contentTotalArr)
-                  VALUES (?, ?, ?)""",
-        (data["date"], data["totalLen"], json_data),
-    )
-con.commit()
-con.close()
-
-
 # con = sqlite3.connect("bulletin.sqlite")
 # cur = con.cursor()
 # SQL_CREATE_TABLE = """CREATE TABLE IF NOT EXISTS bulletin
@@ -95,3 +78,21 @@ con.close()
 #        totalLen       INTEGER    NOT NULL,
 #        contentTotalArr  TEXT     NOT NULL);"""
 # cur.execute(SQL_CREATE_TABLE)
+
+# with open(DefaultTotalPath, "r") as f:
+#     totalJson = json.load(f)
+#     f.close()
+# con = sqlite3.connect("bulletin.sqlite")
+# cur = con.cursor()
+# list = totalJson['list']
+# list.reverse()
+# for data in list:
+#     contentTotalArr = data["contentTotalArr"] if 'contentTotalArr' in data else []
+#     json_data = json.dumps(contentTotalArr) 
+#     cur.execute(
+#         """INSERT INTO bulletin (DATE, totalLen, contentTotalArr)
+#                   VALUES (?, ?, ?)""",
+#         (data["date"], data["totalLen"], json_data),
+#     )
+# con.commit()
+# con.close()

@@ -1,17 +1,23 @@
-import os, shutil, json, datetime, requests, re, warnings
+import os, shutil, json, datetime, requests, re, warnings, time, random
 from lxml import etree, html
 from bs4 import BeautifulSoup
 from functools import cmp_to_key
+from typing import Union, List, Optional
+from pydantic import BaseModel
+from utilType import ArchiveDesc, NoticeInfo, Content_Completeness, Content,PartialArchiveDesc
+from datetime import date
+from utilSqlite import insert_archive_desc
 
 # from bs4FindFun import bs4FindFun
 header = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36 Edg/117.0.2045.31"
 }
-defaultFloderPath = "./archives"
-defaultTotalPath = "./total/bulletin.json"
+DefalutFloderPath = "./archives"
+DefaultTotalPath = "./total/bulletin.json"
+BASEURL = "http://gjol.wangyuan.com/"
 
 
-def has_date(string):
+def has_date(string: str):
     """string 是否是日期"""
     date_pattern = (
         r"\d{4}[-/]\d{2}[-/]\d{2}|\d{2}[-/]\d{2}[-/]\d{4}|\w{3}\s\d{1,2},?\s\d{4}"
@@ -23,7 +29,7 @@ def has_date(string):
         return False
 
 
-def compDateTime(x, y):
+def comp_datetime(x, y):
     """日期比较大小"""
     isDS_Store = ".DS_Store" in x or ".DS_Store" in y
     if isDS_Store:
@@ -39,14 +45,14 @@ def compDateTime(x, y):
             return 0
 
 
-def getDefaultFloderFile():
+def get_default_floder_file():
     """获取archives中的文件名称"""
-    floderFiles = os.listdir(defaultFloderPath)
-    sortFloderFiles = sorted(floderFiles, key=cmp_to_key(compDateTime))
+    floderFiles = os.listdir(DefalutFloderPath)
+    sortFloderFiles = sorted(floderFiles, key=cmp_to_key(comp_datetime))
     return sortFloderFiles
 
 
-def getDateFormFile(filePath):
+def get_date_form_file(filePath):
     """从html中读取日期，作为archives下文件夹的名称
     payload:
         filePath:原始html文件路径
@@ -85,6 +91,25 @@ def getDateFormFile(filePath):
             "{}格式有误,获取的日期格式非法：{}".format(filePath, resolveDate)
         )
     return resolveDate
+
+
+def get_date_form_NoticeInfo(notice: NoticeInfo):
+    """从公告信息里取得公告的时间，从date中取年份，从公告标题中取日和月
+    版本更新公告标题中没有日和月 返回空
+
+    Args:
+        notice (NoticeInfo): 公告信息
+
+    Returns:
+        str: 公告的日期
+    """
+    year = notice.date[:4]
+    try:
+        month, day = re.findall(r"\d+", notice.name.split("》")[1][:5])
+        new_date = f"{year}-{int(month):02d}-{int(day):02d}"
+    except:
+        new_date = ""
+    return new_date
 
 
 def categorization(path):
@@ -148,7 +173,16 @@ def categorization(path):
     return {"totalLen": totalLen, "contentArr": resolveResult}
 
 
-def categorizationByBs4(path):
+def categorization_by_bs4(path: str, noticeInfo: NoticeInfo):
+    """从content.html中分类内容
+
+    Args:
+        path (str): content.html文件路径
+        noticeInfo (NoticeInfo): 公告信息
+
+    Returns:
+        ArchiveDesc: 公告desc信息
+    """    
     with open(path, "r", encoding="utf-8") as f:
         content = f.read()
         f.close()
@@ -168,10 +202,12 @@ def categorizationByBs4(path):
     ]
     typeList = []
     lastChildFirstTest = None
+    notice_date: str = get_date_form_NoticeInfo(notice=noticeInfo)
+    notice_authors: str = ""
+    categorization:ArchiveDesc = ArchiveDesc(name=noticeInfo.name)
     contentArr = []
     contentTotalArr = []
     totalLen = 0
-    otherInfo = {"date": "", "authors": ""}
     for ruler in findRules:
         typeList = soup.find_all(
             name=ruler["name"], style=ruler["style"], string=ruler["string"]
@@ -184,7 +220,12 @@ def categorizationByBs4(path):
         textList = list(text for text in soup.stripped_strings)
         allText = "".join(textList)
         totalLen = len(allText)
-        return {"totalLen": totalLen, **otherInfo, "contentArr": contentArr}
+        if not len(notice_date) == 0:
+            notice_date_warn = "日期无效：{}".format(path)
+            warnings.warn(notice_date_warn)
+        categorization.date = notice_date
+        categorization.totalLen = totalLen
+        return categorization
         # raise Exception("捕获规则失效：{}".format(path))
     for child in reversed(typeList):
         # 小标题的父级p标签
@@ -209,54 +250,56 @@ def categorizationByBs4(path):
             year = dateArr[0]
             month = "0{}".format(dateArr[1]) if len(dateArr[1]) < 2 else dateArr[1]
             day = "0{}".format(dateArr[2]) if len(dateArr[2]) < 2 else dateArr[2]
-            otherInfo["date"] = "{}-{}-{}".format(year, month, day)
-            otherInfo["authors"] = textArr.pop()
+            notice_authors = textArr.pop()
+            notice_date_from_file = "{}-{}-{}".format(year, month, day)
+            categorization.authors = notice_authors
+            if notice_date != notice_date:
+                notice_date_warn = (
+                    "日期不一致：{}，get_date_form_NoticeInfo：{},公告末尾{}".format(
+                        path, notice_date, notice_date_from_file
+                    )
+                )
+                warnings.warn(notice_date_warn)
+            categorization.date = notice_date
             # 如果存在就删除礼貌用语
             if textArr[len(textArr) - 1] == "祝大家游戏愉快！":
                 textArr.pop()
             if textArr[len(textArr) - 1] == "维护期间给您带来的不便，敬请谅解。":
                 textArr.pop()
         allText = "".join(textArr)
-        info = {
-            "name": typeName.replace("☆", ""),
-            "leng": len(allText),
-        }
-        totalLen = totalLen + info["leng"]
-        contentArr.append(
-            {
-                **info,
-                "content": allText,
-            }
+        info = Content(name=typeName.replace("☆", ""), leng=len(allText))
+        totalLen = totalLen + info.leng
+        info_by_content = Content_Completeness(
+            name=info.name, leng=info.leng, content=allText
         )
+        contentArr.append(info_by_content)
         contentTotalArr.append(info)
         lastChildFirstTest = typeName
-    return {
-        "totalLen": totalLen,
-        **otherInfo,
-        "contentArr": contentArr,
-        "contentTotalArr": contentTotalArr,
-    }
 
+    categorization.totalLen = totalLen
+    categorization.contentArr = contentArr
+    categorization.contentTotalArr = contentTotalArr
+    return categorization
+def save_desc(path:str, obj:ArchiveDesc):
+    """保存公告的描述信息，如果json文件存在，就先读取再合并保存，不存在则新建json文件
 
-def saveDesc(path, obj):
-    """保存公告的描述信息，如果json文件存在，就先读取再合并保存，不存在则新建json文件。
-    payload:
-        path:desc文件路径，不存在会新建。
-        obj:新增的数据
-    """
+    Args:
+        path (str): desc文件路径，不存在会新建
+        obj (ArchiveDesc): ArchiveDesc的实例
+    """    
     source = {}
     isHaveJson = os.path.exists(path)
     if isHaveJson:
         with open(path, "r") as f:
             source = json.load(f)
             f.close()
-    source.update(obj)
+    source.update(obj.model_dump(exclude_none=True))
     with open(path, "w") as f:
         json.dump(source, f, ensure_ascii=False)
         f.close()
 
 
-def getFirstArchives(floderPath=defaultFloderPath):
+def get_first_archives(floderPath: str = DefalutFloderPath):
     """从Archive文件夹中读取最新的一条公告"""
     floderFiles = os.listdir(floderPath)
     sortFloderFiles = sorted(floderFiles)
@@ -266,7 +309,7 @@ def getFirstArchives(floderPath=defaultFloderPath):
     isHaveJson = os.path.exists(jsonFilePath)
     if isHaveJson:
         with open(jsonFilePath, "r") as f:
-            source = json.load(f)
+            source: ArchiveDesc = json.load(f)
             f.close()
     else:
         raise ValueError("Archive中最新的公告信息里不存在desc.josn")
@@ -274,30 +317,113 @@ def getFirstArchives(floderPath=defaultFloderPath):
     return source
 
 
-def getNoticeInfo(url, firstNoticeDate):
+def get_notice_info(url: str, firstNoticeDate: date):
     """获取公告列表中的全部公告信息
-    payload:
-        url:公告列表的URL
-        firstNoticeDate:已保存第一条公告的日期
+
+    Args:
+        url (str): 公告列表的URL
+        firstNoticeDate (date): 已保存第一条公告的日期
+
+    Returns:
+        List[NoticeInfo]: 公告列表中的公告信息
     """
     res = requests.get(url, headers=header).text
     soup = BeautifulSoup(res, "lxml")
     allList = soup.find("div", class_="list_box").find_all("li")  # type: ignore
-    res = []
+    resList: List[NoticeInfo] = []
     for li in allList:
         infoForA = li.a
         infoForTime = li.span
         date = datetime.datetime.strptime(infoForTime.string, "%Y-%m-%d")
         if date > firstNoticeDate:
-            info = {
-                "name": infoForA.attrs["title"],
-                "href": infoForA.attrs["href"],
-                "date": infoForTime.string,
-            }
-            res.append(info)
+            info = NoticeInfo(
+                name=infoForA.attrs["title"],
+                href=infoForA.attrs["href"],
+                date=infoForTime.string,
+            )
+            resList.append(info)
         else:
             print(infoForA.attrs["title"])
-    return res
+    return resList
+
+
+def folder_exists(folder_name: str, directory: str = DefalutFloderPath):
+    """判断 folder_name 是否存在于文件夹 directory 中
+
+    Args:
+        folder_name (str): 子文件夹名称
+        directory (str, optional): 父文件夹名称，默认 DefalutFloderPath.
+
+    Returns:
+        bool: _description_
+    """
+    folder_path = os.path.join(directory, folder_name)
+    return os.path.exists(folder_path)
+
+
+def download_file(noticeInfo: NoticeInfo):
+    """下载公告文件，保存到archives下，以日期作为文件夹名称
+
+    Args:
+        noticeInfo (NoticeInfo): 公告信息
+    Returns:
+        str: 下载公告的conent文件的路径
+    """
+    floderName = noticeInfo.date
+    url = noticeInfo.href.replace("/z/../", BASEURL)
+    is_have_file = folder_exists(floderName)
+    source_file_name: str = "{}/{}/source.html".format(DefalutFloderPath, floderName)
+    content_file_name: str = "{}/{}/content.html".format(DefalutFloderPath, floderName)
+    if not is_have_file:
+        print(f"下载公告日期{floderName}")
+        res = requests.get(url, headers=header).text
+        soup = BeautifulSoup(res, "lxml")
+        with open(source_file_name, "w", encoding="utf-8") as f:
+            f.write(str(soup))
+            f.close()
+
+        # 过滤不需要的标签
+        for excludedDivName in ["more_button", "bdsharebuttonbox"]:
+            excluded_div = soup.find("div", {"class": excludedDivName})
+            if excluded_div is not None:
+                excluded_div.extract()
+        excluded_tags = soup.select("script")
+        for tag in excluded_tags:
+            tag.extract()
+        details = soup.find("div", class_="details")
+        with open(content_file_name, "w", encoding="utf-8") as f:
+            f.write(str(details))
+            f.close()
+    return content_file_name
+
+
+def download_and_resolve_notice(noticeList: List[NoticeInfo], is_resolve: bool = True):
+    """下载公告,支持调用 categorization_by_bs4 生成desc.josn文件和更新数据库
+
+    Args:
+        noticeList (List[NoticeInfo]): 公告信息组成的List
+        is_resolve (bool, optional): 默认生成desc.josn文件和更新数据库
+    """
+    for i, noticeInfo in enumerate(noticeList):
+        name = noticeInfo.name
+        isNoticeDownLoad: bool = folder_exists(noticeInfo.date)
+        filterName = (
+            "更新维护公告" in name
+            or "职业调整公告" in name
+            or "职业技能改动公告" in name
+        )
+        if filterName and isNoticeDownLoad:
+            sleeptime = random.randint(10, 40)
+            file_path = download_file(noticeInfo)
+            if is_resolve:
+                categorizationInfo = categorization_by_bs4(file_path, noticeInfo)
+                save_desc(file_path, categorizationInfo)
+                insert_archive_desc(categorizationInfo)
+            print(f"第{i}次循环,{name},等待{time.ctime()}秒")
+            time.sleep(sleeptime)
+            print(f"第{i}次循环结束,{time.ctime()}")
+        else:
+            print(f"第{i}次循环,{name},不是公告，不需要处理,跳过,{time.ctime()}")
 
 
 def merge_requirements(*args):
