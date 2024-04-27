@@ -18,7 +18,8 @@ from testDate import pendingNoticeTest
 # except:
 #     raise ValueError("读取现有的列表失败")
 
-firstNoticeDateStrFormSqlite = get_new_date()
+# firstNoticeDateStrFormSqlite = get_new_date()
+firstNoticeDateStrFormSqlite = '2023-09-22'
 firstNoticeDateFormSqlite = datetime.datetime.strptime(firstNoticeDateStrFormSqlite,"%Y-%m-%d")
 
 
@@ -31,15 +32,18 @@ def getPath(i):
     return base_url
 
 #读取新一页公告列表，筛选未处理的公告
-# pendingNotice:List[NoticeInfo] = []
-pendingNotice:List[NoticeInfo] = pendingNoticeTest
+pendingNotice:List[NoticeInfo] = []
+# pendingNotice:List[NoticeInfo] = pendingNoticeTest
 
-# for i in range(1):
-#     url = getPath(i)
-#     pendingNotice = get_notice_info(url,firstNoticeDateFormSqlite)
+for i in range(4):
+    if i != 0 :
+        url = getPath(i)
+        pendingNotice = []
+        pendingNotice = get_notice_info(url,firstNoticeDateFormSqlite)
+        download_and_resolve_notice(pendingNotice)
 
 
-print(pendingNotice[0])
+
+# print(pendingNotice[0])
 # with open('new-notice.json', 'w') as f:
 #     json.dump(allNotice, f,ensure_ascii=False)
-download_and_resolve_notice(pendingNotice)

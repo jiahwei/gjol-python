@@ -378,6 +378,9 @@ def download_file(noticeInfo: NoticeInfo):
         print(f"下载公告日期{floderName}")
         res = requests.get(url, headers=header).text
         soup = BeautifulSoup(res, "lxml")
+
+        directory = os.path.dirname(source_file_name)
+        os.makedirs(directory, exist_ok=True)
         with open(source_file_name, "w", encoding="utf-8") as f:
             f.write(str(soup))
             f.close()
@@ -406,7 +409,7 @@ def download_and_resolve_notice(noticeList: List[NoticeInfo], is_resolve: bool =
     """
     for i, noticeInfo in enumerate(noticeList):
         name = noticeInfo.name
-        isNoticeDownLoad: bool = folder_exists(noticeInfo.date)
+        isNoticeDownLoad: bool = not folder_exists(noticeInfo.date)
         filterName = (
             "更新维护公告" in name
             or "职业调整公告" in name
@@ -417,7 +420,8 @@ def download_and_resolve_notice(noticeList: List[NoticeInfo], is_resolve: bool =
             file_path = download_file(noticeInfo)
             if is_resolve:
                 categorizationInfo = categorization_by_bs4(file_path, noticeInfo)
-                save_desc(file_path, categorizationInfo)
+                desc_file_name: str = "{}/{}/desc.json".format(DefalutFloderPath, noticeInfo.date)
+                save_desc(desc_file_name, categorizationInfo)
                 insert_archive_desc(categorizationInfo)
             print(f"第{i}次循环,{name},等待{time.ctime()}秒")
             time.sleep(sleeptime)

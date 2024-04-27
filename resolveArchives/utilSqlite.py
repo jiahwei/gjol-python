@@ -1,4 +1,4 @@
-from util import get_first_archives, get_notice_info
+# from util import get_first_archives, get_notice_info
 from utilType import ArchiveDesc
 import os, json, sqlite3
 
@@ -30,7 +30,8 @@ def insert_archive_desc(archive_desc:ArchiveDesc,sqlitePath: str = DefaultSqlite
     conn = sqlite3.connect(sqlitePath)
     cursor = conn.cursor()
     data = archive_desc.model_dump()
-
+    json_data = json.dumps(data["contentTotalArr"]) 
+    data['contentTotalArr'] = json_data
     sql_insert = """
     INSERT INTO bulletin (DATE, totalLen, contentTotalArr, NAME)
     VALUES (:date, :totalLen, :contentTotalArr, :name);
@@ -38,6 +39,7 @@ def insert_archive_desc(archive_desc:ArchiveDesc,sqlitePath: str = DefaultSqlite
 
     cursor.execute(sql_insert, data)
     conn.commit()
+    conn.close()
 
 def sort_sqlit3_by_date(sqlitePath: str = DefaultSqlitePath):
     conn = sqlite3.connect(sqlitePath)
