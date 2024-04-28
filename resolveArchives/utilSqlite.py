@@ -90,5 +90,3 @@ def check_date_is_thurs(sqlitePath: str = DefaultSqlitePath):
     results = cursor.fetchall()
     conn.close()
     return results
-
-print(check_date_is_thurs())

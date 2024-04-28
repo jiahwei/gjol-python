@@ -8,7 +8,6 @@ from utilSqlite import get_new_date
 from utilType import ArchiveDesc,NoticeInfo
 from typing import Union, List, Optional
 
-from testDate import pendingNoticeTest
 
 # 读取存档里已保存的第一条公告
 # try:

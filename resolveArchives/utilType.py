@@ -53,11 +53,13 @@ class ReleaseInfo(BaseModel):
 
     Args:
         name (str): 版本名称
+        acronyms (str): 版本简称
         start_date (str): 开始日期
         end_date (str): 结束日期
         total (int): 总更新文本字数
     """    
     name:str
+    acronyms:str
     start_date:str
     end_date:str
     total:int = 0

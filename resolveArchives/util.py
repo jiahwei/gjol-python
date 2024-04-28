@@ -1,12 +1,18 @@
-import os, shutil, json, datetime, requests, re, warnings, time, random
+import os, shutil, json, datetime, requests, re, warnings, time, random, sqlite3
 from lxml import etree, html
 from bs4 import BeautifulSoup
 from functools import cmp_to_key
 from typing import Union, List, Optional
 from pydantic import BaseModel
-from utilType import ArchiveDesc, NoticeInfo, Content_Completeness, Content,PartialArchiveDesc
-from datetime import date
-from utilSqlite import insert_archive_desc
+from utilType import ArchiveDesc, NoticeInfo, Content_Completeness, Content, ReleaseInfo
+from datetime import date, datetime, timedelta
+from utilSqlite import insert_archive_desc, DefaultSqlitePath
+
+import logging
+
+logging.basicConfig(
+    filename="app.log", filemode="w", format="%(name)s - %(levelname)s - %(message)s"
+)
 
 # from bs4FindFun import bs4FindFun
 header = {
@@ -35,8 +41,8 @@ def comp_datetime(x, y):
     if isDS_Store:
         return -1
     else:
-        dateX = datetime.datetime.strptime(x, "%Y-%m-%d")
-        dateY = datetime.datetime.strptime(y, "%Y-%m-%d")
+        dateX = datetime.strptime(x, "%Y-%m-%d")
+        dateY = datetime.strptime(y, "%Y-%m-%d")
         if dateX < dateY:
             return 1
         elif dateX > dateY:
@@ -182,7 +188,7 @@ def categorization_by_bs4(path: str, noticeInfo: NoticeInfo):
 
     Returns:
         ArchiveDesc: 公告desc信息
-    """    
+    """
     with open(path, "r", encoding="utf-8") as f:
         content = f.read()
         f.close()
@@ -204,7 +210,7 @@ def categorization_by_bs4(path: str, noticeInfo: NoticeInfo):
     lastChildFirstTest = None
     notice_date: str = get_date_form_NoticeInfo(notice=noticeInfo)
     notice_authors: str = ""
-    categorization:ArchiveDesc = ArchiveDesc(name=noticeInfo.name)
+    categorization: ArchiveDesc = ArchiveDesc(name=noticeInfo.name)
     contentArr = []
     contentTotalArr = []
     totalLen = 0
@@ -217,12 +223,14 @@ def categorization_by_bs4(path: str, noticeInfo: NoticeInfo):
     if len(typeList) == 0:
         warnText = "捕获规则失效：{}".format(path)
         warnings.warn(warnText)
+        logging.warning(warnText)
         textList = list(text for text in soup.stripped_strings)
         allText = "".join(textList)
         totalLen = len(allText)
         if not len(notice_date) == 0:
             notice_date_warn = "日期无效：{}".format(path)
             warnings.warn(notice_date_warn)
+            logging.warning(notice_date_warn)
         categorization.date = notice_date
         categorization.totalLen = totalLen
         return categorization
@@ -260,6 +268,7 @@ def categorization_by_bs4(path: str, noticeInfo: NoticeInfo):
                     )
                 )
                 warnings.warn(notice_date_warn)
+                logging.warning(notice_date_warn)
             categorization.date = notice_date
             # 如果存在就删除礼貌用语
             if textArr[len(textArr) - 1] == "祝大家游戏愉快！":
@@ -280,13 +289,15 @@ def categorization_by_bs4(path: str, noticeInfo: NoticeInfo):
     categorization.contentArr = contentArr
     categorization.contentTotalArr = contentTotalArr
     return categorization
-def save_desc(path:str, obj:ArchiveDesc):
+
+
+def save_desc(path: str, obj: ArchiveDesc):
     """保存公告的描述信息，如果json文件存在，就先读取再合并保存，不存在则新建json文件
 
     Args:
         path (str): desc文件路径，不存在会新建
         obj (ArchiveDesc): ArchiveDesc的实例
-    """    
+    """
     source = {}
     isHaveJson = os.path.exists(path)
     if isHaveJson:
@@ -334,7 +345,7 @@ def get_notice_info(url: str, firstNoticeDate: date):
     for li in allList:
         infoForA = li.a
         infoForTime = li.span
-        date = datetime.datetime.strptime(infoForTime.string, "%Y-%m-%d")
+        date = datetime.strptime(infoForTime.string, "%Y-%m-%d")
         if date > firstNoticeDate:
             info = NoticeInfo(
                 name=infoForA.attrs["title"],
@@ -420,7 +431,9 @@ def download_and_resolve_notice(noticeList: List[NoticeInfo], is_resolve: bool =
             file_path = download_file(noticeInfo)
             if is_resolve:
                 categorizationInfo = categorization_by_bs4(file_path, noticeInfo)
-                desc_file_name: str = "{}/{}/desc.json".format(DefalutFloderPath, noticeInfo.date)
+                desc_file_name: str = "{}/{}/desc.json".format(
+                    DefalutFloderPath, noticeInfo.date
+                )
                 save_desc(desc_file_name, categorizationInfo)
                 insert_archive_desc(categorizationInfo)
             print(f"第{i}次循环,{name},等待{time.ctime()}秒")
@@ -443,3 +456,90 @@ def merge_requirements(*args):
     with open("combined_requirements.txt", "w") as f:
         for requirement in unique_requirements:
             f.write(requirement + "\n")
+
+
+def adjust_to_nearest_thursday(date_str):
+    """把非周四的日期调整到最近的周四
+
+    Args:
+        date_str (str): 非周四的日期
+
+    Returns:
+        str: 最近的周四
+    """
+    date_format = "%Y-%m-%d"
+    date = datetime.strptime(date_str, date_format)
+    weekday = date.weekday()
+
+    if weekday < 3:
+        # If the date is before Thursday, go forward to the next Thursday
+        date += timedelta(days=(3 - weekday))
+    elif weekday > 3:
+        # If the date is after Thursday, go back to the previous Thursday
+        date -= timedelta(days=(weekday - 3))
+
+    return date.strftime(date_format)
+
+
+def rename_no_thursday(date_str):
+    date_format = "%Y-%m-%d"
+    date = datetime.strptime(date_str, date_format)
+    weekday = date.weekday()
+
+    if weekday == 3:
+        return
+    thurs_day = adjust_to_nearest_thursday(date_str)
+    thurs_day_date = datetime.strptime(date_str, date_format)
+    full_dir_path = "{}/{}".format(DefalutFloderPath, date_str)
+    full_thurs_dir_path = "{}/{}".format(DefalutFloderPath, thurs_day)
+    if os.path.exists(full_dir_path):
+
+        desc_file_name = "{}/{}/desc.json".format(DefalutFloderPath,date_str)
+        with open(desc_file_name, "r") as f:
+            source = json.load(f)
+            f.close()
+        source['date'] = thurs_day
+        with open(desc_file_name, "w") as f:
+            json.dump(source, f, ensure_ascii=False)
+            f.close()
+
+        os.rename(full_dir_path, full_thurs_dir_path)
+
+        conn = sqlite3.connect(DefaultSqlitePath)
+        cur = conn.cursor()
+        sql_update_query = """
+        UPDATE bulletin
+        SET date = ?
+        WHERE date = ?;
+        """
+        cur.execute(sql_update_query,(thurs_day,date_str))
+        conn.commit()
+        conn.close()
+
+        print(f"文件夹 '{full_dir_path}' 已经被重命名为 '{full_thurs_dir_path}'")
+    else:
+        print(f"文件夹 '{full_dir_path}' 不存在")
+
+
+def download_reslease():
+    """下载版本数据"""
+    base_url = "https://gjol.wangyuan.com/info/huod/version{}.shtml"
+    resList: List[ReleaseInfo] = []
+    for i in range(3):
+        url = (
+            base_url.format(i)
+            if i != 0
+            else "https://gjol.wangyuan.com/info/huod/version.shtml"
+        )
+        res = requests.get(url, headers=header).text
+        soup = BeautifulSoup(res, "lxml")
+        allList = soup.find("div", class_="group_list").find_all("li")  # type: ignore
+        for li in allList:
+            name = li.span.string
+            time = li.p.i.string
+            date = datetime.strptime(time, "%Y.%m.%d")
+            res_date = date.strftime("%Y-%m-%d")
+            resList.append(
+                ReleaseInfo(name=name, start_date=res_date, end_date="", acronyms="")
+            )
+    return resList
