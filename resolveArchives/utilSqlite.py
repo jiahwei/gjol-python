@@ -20,18 +20,19 @@ def get_new_date(sqlitePath: str = DefaultSqlitePath):
     conn.close()
     return latest_row_date[0]
 
-def insert_archive_desc(archive_desc:ArchiveDesc,sqlitePath: str = DefaultSqlitePath):
+
+def insert_archive_desc(archive_desc: ArchiveDesc, sqlitePath: str = DefaultSqlitePath):
     """将 ArchiveDesc 对象转换为字典 插入表中
 
     Args:
         archive_desc (ArchiveDesc): ArchiveDesc 实例
         sqlitePath (str, optional): 数据库路径. Defaults to DefaultSqlitePath.
-    """    
+    """
     conn = sqlite3.connect(sqlitePath)
     cursor = conn.cursor()
     data = archive_desc.model_dump()
-    json_data = json.dumps(data["contentTotalArr"]) 
-    data['contentTotalArr'] = json_data
+    json_data = json.dumps(data["contentTotalArr"])
+    data["contentTotalArr"] = json_data
     sql_insert = """
     INSERT INTO bulletin (DATE, totalLen, contentTotalArr, NAME)
     VALUES (:date, :totalLen, :contentTotalArr, :name);
@@ -41,7 +42,13 @@ def insert_archive_desc(archive_desc:ArchiveDesc,sqlitePath: str = DefaultSqlite
     conn.commit()
     conn.close()
 
+
 def sort_sqlit3_by_date(sqlitePath: str = DefaultSqlitePath):
+    """按照日期对数据库的数据排序，并替换数据库
+
+    Args:
+        sqlitePath (str, optional): _description_. Defaults to DefaultSqlitePath.
+    """
     conn = sqlite3.connect(sqlitePath)
     cursor = conn.cursor()
     # 创建一个新的表
@@ -70,3 +77,18 @@ def sort_sqlit3_by_date(sqlitePath: str = DefaultSqlitePath):
     cursor.execute(sql_rename_new_table)
     conn.commit()
 
+
+def check_date_is_thurs(sqlitePath: str = DefaultSqlitePath):
+    conn = sqlite3.connect(sqlitePath)
+    cursor = conn.cursor()
+    sql_query_is_thurs = """
+    SELECT DATE
+    FROM bulletin
+    WHERE STRFTIME('%w', DATE) != '4';
+    """
+    cursor.execute(sql_query_is_thurs)
+    results = cursor.fetchall()
+    conn.close()
+    return results
+
+print(check_date_is_thurs())
