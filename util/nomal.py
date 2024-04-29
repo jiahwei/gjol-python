@@ -1,12 +1,14 @@
-import os, shutil, json, datetime, requests, re, warnings, time, random, sqlite3
+import os, shutil, json, datetime, requests, re, warnings, time, random, sqlite3,sys
 from lxml import etree, html
 from bs4 import BeautifulSoup
 from functools import cmp_to_key
 from typing import Union, List, Optional
 from pydantic import BaseModel
-from utilType import ArchiveDesc, NoticeInfo, Content_Completeness, Content, ReleaseInfo
 from datetime import date, datetime, timedelta
-from utilSqlite import insert_archive_desc, DefaultSqlitePath
+
+from util.type import ArchiveDesc, NoticeInfo, Content_Completeness, Content, ReleaseInfo
+from util.sqlite import insert_archive_desc
+from constants import DEFAULT_SQLITE_PATH,BASEURL,DEFAULT_FLODER_PATH
 
 import logging
 
@@ -18,9 +20,7 @@ logging.basicConfig(
 header = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36 Edg/117.0.2045.31"
 }
-DefalutFloderPath = "./archives"
-DefaultTotalPath = "./total/bulletin.json"
-BASEURL = "http://gjol.wangyuan.com/"
+
 
 
 def has_date(string: str):
@@ -53,7 +53,7 @@ def comp_datetime(x, y):
 
 def get_default_floder_file():
     """获取archives中的文件名称"""
-    floderFiles = os.listdir(DefalutFloderPath)
+    floderFiles = os.listdir(DEFAULT_FLODER_PATH)
     sortFloderFiles = sorted(floderFiles, key=cmp_to_key(comp_datetime))
     return sortFloderFiles
 
@@ -310,7 +310,7 @@ def save_desc(path: str, obj: ArchiveDesc):
         f.close()
 
 
-def get_first_archives(floderPath: str = DefalutFloderPath):
+def get_first_archives(floderPath: str = DEFAULT_FLODER_PATH):
     """从Archive文件夹中读取最新的一条公告"""
     floderFiles = os.listdir(floderPath)
     sortFloderFiles = sorted(floderFiles)
@@ -358,12 +358,12 @@ def get_notice_info(url: str, firstNoticeDate: date):
     return resList
 
 
-def folder_exists(folder_name: str, directory: str = DefalutFloderPath):
+def folder_exists(folder_name: str, directory: str = DEFAULT_FLODER_PATH):
     """判断 folder_name 是否存在于文件夹 directory 中
 
     Args:
         folder_name (str): 子文件夹名称
-        directory (str, optional): 父文件夹名称，默认 DefalutFloderPath.
+        directory (str, optional): 父文件夹名称，默认 DEFAULT_FLODER_PATH.
 
     Returns:
         bool: _description_
@@ -383,8 +383,8 @@ def download_file(noticeInfo: NoticeInfo):
     floderName = noticeInfo.date
     url = noticeInfo.href.replace("/z/../", BASEURL)
     is_have_file = folder_exists(floderName)
-    source_file_name: str = "{}/{}/source.html".format(DefalutFloderPath, floderName)
-    content_file_name: str = "{}/{}/content.html".format(DefalutFloderPath, floderName)
+    source_file_name: str = "{}/{}/source.html".format(DEFAULT_FLODER_PATH, floderName)
+    content_file_name: str = "{}/{}/content.html".format(DEFAULT_FLODER_PATH, floderName)
     if not is_have_file:
         print(f"下载公告日期{floderName}")
         res = requests.get(url, headers=header).text
@@ -432,7 +432,7 @@ def download_and_resolve_notice(noticeList: List[NoticeInfo], is_resolve: bool =
             if is_resolve:
                 categorizationInfo = categorization_by_bs4(file_path, noticeInfo)
                 desc_file_name: str = "{}/{}/desc.json".format(
-                    DefalutFloderPath, noticeInfo.date
+                    DEFAULT_FLODER_PATH, noticeInfo.date
                 )
                 save_desc(desc_file_name, categorizationInfo)
                 insert_archive_desc(categorizationInfo)
@@ -490,11 +490,11 @@ def rename_no_thursday(date_str):
         return
     thurs_day = adjust_to_nearest_thursday(date_str)
     thurs_day_date = datetime.strptime(date_str, date_format)
-    full_dir_path = "{}/{}".format(DefalutFloderPath, date_str)
-    full_thurs_dir_path = "{}/{}".format(DefalutFloderPath, thurs_day)
+    full_dir_path = "{}/{}".format(DEFAULT_FLODER_PATH, date_str)
+    full_thurs_dir_path = "{}/{}".format(DEFAULT_FLODER_PATH, thurs_day)
     if os.path.exists(full_dir_path):
 
-        desc_file_name = "{}/{}/desc.json".format(DefalutFloderPath,date_str)
+        desc_file_name = "{}/{}/desc.json".format(DEFAULT_FLODER_PATH,date_str)
         with open(desc_file_name, "r") as f:
             source = json.load(f)
             f.close()
@@ -505,7 +505,7 @@ def rename_no_thursday(date_str):
 
         os.rename(full_dir_path, full_thurs_dir_path)
 
-        conn = sqlite3.connect(DefaultSqlitePath)
+        conn = sqlite3.connect(DEFAULT_SQLITE_PATH)
         cur = conn.cursor()
         sql_update_query = """
         UPDATE bulletin

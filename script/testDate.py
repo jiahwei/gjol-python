@@ -1,6 +1,7 @@
-from utilType import ArchiveDesc, NoticeInfo, ReleaseInfo
 from typing import Union, List, Optional
-from util import adjust_to_nearest_thursday, rename_no_thursday
+
+from util.type import ArchiveDesc, NoticeInfo, ReleaseInfo
+from util.nomal import adjust_to_nearest_thursday, rename_no_thursday
 
 
 
@@ -236,5 +237,5 @@ release_info: List[ReleaseInfo] = [
 # adjusted_dates = [adjust_to_nearest_thursday(date[0]) for date in date_is_no_turs]
 # print(adjusted_dates)
 
-for date in date_is_no_turs:
-    rename_no_thursday(date[0])
+# for date in date_is_no_turs:
+#     rename_no_thursday(date[0])

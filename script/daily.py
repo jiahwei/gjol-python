@@ -1,25 +1,27 @@
 """
 定时执行的脚本
 """
-import datetime
-import json
-from util import get_first_archives,get_notice_info,download_and_resolve_notice
-from utilSqlite import get_new_date
-from utilType import ArchiveDesc,NoticeInfo
+import json,sys
 from typing import Union, List, Optional
+from datetime import datetime
+sys.path.append(".")
+sys.path.append("./util")
+from util.nomal import get_first_archives,get_notice_info,download_and_resolve_notice
+from util.sqlite import get_new_date
+from util.type import ArchiveDesc,NoticeInfo
 
 
 # 读取存档里已保存的第一条公告
 # try:
 #     firstNoticeDesc =  get_first_archives()
 #     firstNoticeDateStr = firstNoticeDesc.date
-#     firstNoticeDate = datetime.datetime.strptime(firstNoticeDateStr,"%Y-%m-%d")
+#     firstNoticeDate = datetime.strptime(firstNoticeDateStr,"%Y-%m-%d")
 # except:
 #     raise ValueError("读取现有的列表失败")
 
-# firstNoticeDateStrFormSqlite = get_new_date()
+# firstNoticeDateStrFormSqlite = get_new_date()[1]
 firstNoticeDateStrFormSqlite = '2023-09-22'
-firstNoticeDateFormSqlite = datetime.datetime.strptime(firstNoticeDateStrFormSqlite,"%Y-%m-%d")
+firstNoticeDateFormSqlite = datetime.strptime(firstNoticeDateStrFormSqlite,"%Y-%m-%d")
 
 
 def getPath(i):
