@@ -6,7 +6,7 @@ from typing import Union, List, Optional
 from pydantic import BaseModel
 from datetime import date, datetime, timedelta
 
-from util.type import ArchiveDesc, NoticeInfo, Content_Completeness, Content, ReleaseInfo
+from util.type import ArchiveDesc, NoticeInfo, Content_Completeness, Content, VersionInfo
 from util.sqlite import insert_archive_desc
 from constants import DEFAULT_SQLITE_PATH,BASEURL,DEFAULT_FLODER_PATH
 
@@ -509,8 +509,8 @@ def rename_no_thursday(date_str):
         cur = conn.cursor()
         sql_update_query = """
         UPDATE bulletin
-        SET date = ?
-        WHERE date = ?;
+        SET bulletin_date = ?
+        WHERE bulletin_date = ?;
         """
         cur.execute(sql_update_query,(thurs_day,date_str))
         conn.commit()
@@ -524,7 +524,7 @@ def rename_no_thursday(date_str):
 def download_reslease():
     """下载版本数据"""
     base_url = "https://gjol.wangyuan.com/info/huod/version{}.shtml"
-    resList: List[ReleaseInfo] = []
+    resList: List[VersionInfo] = []
     for i in range(3):
         url = (
             base_url.format(i)
@@ -540,6 +540,6 @@ def download_reslease():
             date = datetime.strptime(time, "%Y.%m.%d")
             res_date = date.strftime("%Y-%m-%d")
             resList.append(
-                ReleaseInfo(name=name, start_date=res_date, end_date="", acronyms="")
+                VersionInfo(name=name, start_date=res_date, end_date="", acronyms="")
             )
     return resList

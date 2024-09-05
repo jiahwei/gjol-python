@@ -1,6 +1,6 @@
 from typing import Union, List, Optional
 
-from util.type import ArchiveDesc, NoticeInfo, ReleaseInfo
+from util.type import ArchiveDesc, NoticeInfo, VersionInfo
 from util.nomal import adjust_to_nearest_thursday, rename_no_thursday
 
 
@@ -156,79 +156,79 @@ date_is_no_turs = [
     ("2023-08-23",),
 ]
 
-release_info: List[ReleaseInfo] = [
-    ReleaseInfo(
+version_info: List[VersionInfo] = [
+    VersionInfo(
         name="暑期资料片 ”共烛天明“", start_date="2023-06-29", end_date="", total=0,acronyms='共烛天明'
     ),
-    ReleaseInfo(
+    VersionInfo(
         name="年度版本“凿空浑沦”",
         start_date="2022-12-15",
         end_date="2023-06-28",
         total=0,
         acronyms="凿空浑沦"
     ),
-    ReleaseInfo(
+    VersionInfo(
         name="暑期资料片“帝首熠兮”",
         start_date="2022-07-14",
         end_date="2022-12-14",
         total=0,
         acronyms="帝首熠兮"
     ),
-    ReleaseInfo(
+    VersionInfo(
         name="春季资料片“明心九天”",
         start_date="2022-04-07",
         end_date="2022-07-13",
         total=0,
         acronyms="明心九天"
     ),
-    ReleaseInfo(
+    VersionInfo(
         name="2021年度版本“玉轮铃音”",
         start_date="2021-12-09",
         end_date="2022-04-06",
         total=0,
         acronyms="玉轮铃音"
     ),
-    ReleaseInfo(
+    VersionInfo(
         name="三周年资料片“天门终开”",
         start_date="2021-07-29",
         end_date="2021-12-08",
         total=0,
         acronyms="天门终开"
     ),
-    ReleaseInfo(
+    VersionInfo(
         name="“月引长刀”资料片", start_date="2020-12-17", end_date="2021-07-28", total=0,acronyms="月引长刀"
     ),
-    ReleaseInfo(
+    VersionInfo(
         name="2020年度版本“瀚海惊弦”",
         start_date="2020-07-16",
         end_date="2020-12-16",
         total=0,
         acronyms="瀚海惊弦"
     ),
-    ReleaseInfo(
+    VersionInfo(
         name="2020春季资料片“山海飞花”",
         start_date="2020-03-19",
         end_date="2020-07-15",
         total=0,
         acronyms="山海飞花"
     ),
-    ReleaseInfo(
+    VersionInfo(
         name="《古剑奇谭三》联动资料片“梦与时空”",
         start_date="2019-11-21",
         end_date="2020-03-18",
         total=0,
         acronyms="梦与时空"
     ),
-    ReleaseInfo(
+    VersionInfo(
         name="2019年“正式公测”", start_date="2019-07-11", end_date="2019-11-20", total=0,acronyms="公测(琅泉太华)"
     ),
-    ReleaseInfo(
+    VersionInfo(
         name="2019春季版本", start_date="2019-03-14", end_date="2019-07-10", total=0,acronyms="2019春季版本"
     ),
-    ReleaseInfo(
+    VersionInfo(
         name="剑鸣流花", start_date="2018-12-20", end_date="2019-03-13", total=0,acronyms="剑鸣流花"
     ),
-    ReleaseInfo(
+    VersionInfo(
         name="不删档测试", start_date="2018-08-16", end_date="2018-12-19", total=0,acronyms="不删档测试"
     ),
 ]

@@ -5,7 +5,7 @@ def creat_table(tableName, SQL_CREATE_TABLE):
     """建表"""
     # SQL_CREATE_TABLE = """CREATE TABLE IF NOT EXISTS bulletin
     #        (ID INTEGER PRIMARY KEY     AUTOINCREMENT,
-    #        DATE           TEXT    NOT NULL,
+    #        bulletin_date           TEXT    NOT NULL,
     #        totalLen       INTEGER    NOT NULL,
     #        contentTotalArr  TEXT     NOT NULL);"""
     con = sqlite3.connect(tableName)
@@ -17,7 +17,7 @@ def creat_table(tableName, SQL_CREATE_TABLE):
 
 def insert_one(tableName, SQL_INSERT_ONE_DATA, data):
     """新增一条数据"""
-    # SQL_INSERT_ONE_DATA = """INSERT INTO bulletin (DATE, totalLen, contentTotalArr)
+    # SQL_INSERT_ONE_DATA = """INSERT INTO bulletin (bulletin_date, totalLen, contentTotalArr)
     #               VALUES (?, ?, ?)"""
     con = sqlite3.connect(tableName)
     cur = con.cursor()
@@ -33,7 +33,7 @@ def insert_one(tableName, SQL_INSERT_ONE_DATA, data):
 def insert_many(tableName, SQL_INSERT_MANY_DATA, data):
     """新增多条数据"""
     # SQL_INSERT_MANY_DATA = (
-    #     "INSERT INTO bulletin (DATE,totalLen,contentTotalArr) VALUES(?,?,?);"
+    #     "INSERT INTO bulletin (bulletin_date,totalLen,contentTotalArr) VALUES(?,?,?);"
     # )
     con = sqlite3.connect(tableName)
     cur = con.cursor()
@@ -78,7 +78,7 @@ creat_table("test.sqlite","""CREATE TABLE IF NOT EXISTS TEST
 
 con = sqlite3.connect("bulletin.sqlite")
 cur = con.cursor()
-res = cur.execute("SELECT * FROM bulletin WHERE DATE = ? " , ('2023-09-21',))
+res = cur.execute("SELECT * FROM bulletin WHERE bulletin_date = ? " , ('2023-09-21',))
 print(res.fetchall())
 con.commit()
 con.close()

@@ -16,7 +16,7 @@ def get_new_date(sqlitePath: str = DEFAULT_SQLITE_PATH) -> ArchiveDesc:
     conn = sqlite3.connect(sqlitePath)
     cursor = conn.cursor()
     # 查询最新日期的一条数据
-    cursor.execute("SELECT * FROM bulletin ORDER BY DATE DESC LIMIT 1")
+    cursor.execute("SELECT * FROM bulletin ORDER BY bulletin_date DESC LIMIT 1")
     latest_row_date: tuple = cursor.fetchone()
     conn.close()
     json_date = json.loads(latest_row_date[3])
@@ -24,8 +24,8 @@ def get_new_date(sqlitePath: str = DEFAULT_SQLITE_PATH) -> ArchiveDesc:
         date=latest_row_date[1],
         totalLen=latest_row_date[2],
         contentTotalArr = json_date,
-        authors=latest_row_date[4],
-        releaseID = latest_row_date[5]
+        name=latest_row_date[4],
+        versionID = latest_row_date[5]
     )
     return resolve_date
 
@@ -42,7 +42,7 @@ def insert_archive_desc(archive_desc: ArchiveDesc, sqlitePath: str = DEFAULT_SQL
     json_data = json.dumps(data["contentTotalArr"])
     data["contentTotalArr"] = json_data
     sql_insert = """
-    INSERT INTO bulletin (DATE, totalLen, contentTotalArr, NAME)
+    INSERT INTO bulletin (bulletin_date, totalLen, contentTotalArr, NAME)
     VALUES (:date, :totalLen, :contentTotalArr, :name);
     """
 
@@ -63,7 +63,7 @@ def sort_sqlit3_by_date(sqlitePath: str = DEFAULT_SQLITE_PATH):
     sql_create_new_table = """
     CREATE TABLE IF NOT EXISTS bulletin_sorted
         (ID INTEGER PRIMARY KEY     AUTOINCREMENT,
-        DATE           TEXT    NOT NULL,
+        bulletin_date           TEXT    NOT NULL,
         totalLen       INTEGER    NOT NULL,
         contentTotalArr  TEXT     NOT NULL,
         NAME           TEXT);
@@ -72,8 +72,8 @@ def sort_sqlit3_by_date(sqlitePath: str = DEFAULT_SQLITE_PATH):
 
     # 将按日期正序排列的数据插入到新的表中
     sql_insert_sorted_data = """
-    INSERT INTO bulletin_sorted (DATE, totalLen, contentTotalArr, NAME)
-    SELECT DATE, totalLen, contentTotalArr, NAME FROM bulletin ORDER BY DATE ASC;
+    INSERT INTO bulletin_sorted (bulletin_date, totalLen, contentTotalArr, NAME)
+    SELECT bulletin_date, totalLen, contentTotalArr, NAME FROM bulletin ORDER BY bulletin_date ASC;
     """
     cursor.execute(sql_insert_sorted_data)
     conn.commit()
@@ -90,9 +90,9 @@ def check_date_is_thurs(sqlitePath: str = DEFAULT_SQLITE_PATH):
     conn = sqlite3.connect(sqlitePath)
     cursor = conn.cursor()
     sql_query_is_thurs = """
-    SELECT DATE
+    SELECT bulletin_date
     FROM bulletin
-    WHERE STRFTIME('%w', DATE) != '4';
+    WHERE STRFTIME('%w', bulletin_date) != '4';
     """
     cursor.execute(sql_query_is_thurs)
     results = cursor.fetchall()
@@ -110,34 +110,34 @@ def print_table_structure(db_path, table_name):
     conn.close()
 
 
-def update_release_id(sqlitePath: str = DEFAULT_SQLITE_PATH):
-    """更新公告表bulletin中的release_id 字段
+def update_version_id(sqlitePath: str = DEFAULT_SQLITE_PATH):
+    """更新公告表bulletin中的version_id 字段
 
     Args:
         sqlitePath (str, optional): _description_. Defaults to DEFAULT_SQLITE_PATH.
     """    
     conn = sqlite3.connect(sqlitePath)
     cur = conn.cursor()
-    sql_set_release_id = """
+    sql_set_version_id = """
     UPDATE bulletin
-        SET release_id = (
-        SELECT ID FROM release
-        WHERE bulletin.date BETWEEN release.startdate AND release.enddate
+        SET version_id = (
+        SELECT id FROM version
+        WHERE bulletin.bulletin_date BETWEEN version.start_date AND version.end_date
     );
     """
-    cur.execute(sql_set_release_id)
-    sql_set_release_id_before_min = """
+    cur.execute(sql_set_version_id)
+    sql_set_version_id_before_min = """
     UPDATE bulletin
-    SET release_id = 1
-    WHERE date < (SELECT MIN(startdate) FROM release);
+    SET version_id = 1
+    WHERE date < (SELECT MIN(start_date) FROM version);
     """
-    cur.execute(sql_set_release_id_before_min)
-    sql_set_release_id_after_max = """
+    cur.execute(sql_set_version_id_before_min)
+    sql_set_version_id_after_max = """
     UPDATE bulletin
-    SET release_id = (SELECT MAX(ID) FROM release)
-    WHERE date > (SELECT MAX(enddate) FROM release);
+    SET version_id = (SELECT MAX(id) FROM version)
+    WHERE date > (SELECT MAX(end_date) FROM version);
     """
-    cur.execute(sql_set_release_id_after_max)    
+    cur.execute(sql_set_version_id_after_max)    
     conn.commit()
     conn.close()
 
@@ -145,8 +145,8 @@ def update_release_id(sqlitePath: str = DEFAULT_SQLITE_PATH):
 # conn = sqlite3.connect(DEFAULT_SQLITE_PATH)
 # cur = conn.cursor()
 # sql = """
-# SELECT DATE,totalLen FROM bulletin
-# where release_id = ?
+# SELECT bulletin_date,totalLen FROM bulletin
+# where version_id = ?
 # order by totalLen desc
 # """
 # cur.execute(sql,(id,))

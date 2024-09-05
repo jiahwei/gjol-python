@@ -20,15 +20,17 @@ class ArchiveDesc(BaseModel):
         contentArr（List[Content_Completeness]）:按类型分类（PVP、PVE、PVX等）的文本信息，包含文本
         contentTotalArr[Content]）:按类型分类（PVP、PVE、PVX等）的文本信息，只记录各个类型的字数，不包含文本
         authors(str）: 作者信息
-        releaseID(int) :公告归属的版本ID
+        versionID(int) :公告归属的版本ID
+        order(int) :公告归属的版本中按字数排序
     """    
-    name: str = ""
     date: str = ""
     totalLen: int = 0
-    contentArr: List[Content_Completeness] = []
     contentTotalArr: List[Content] = []
+    name: str = ""
+    versionID:int = 0
+    order:int = 0
     authors: str = ""
-    releaseID:int = 0
+    contentArr: List[Content_Completeness] = []
     
 class PartialArchiveDesc(BaseModel):
     name: Optional[str] = None
@@ -50,7 +52,7 @@ class NoticeInfo(BaseModel):
     href: str
     date: str
 
-class ReleaseInfo(BaseModel):
+class VersionInfo(BaseModel):
     """版本信息
 
     Args:
