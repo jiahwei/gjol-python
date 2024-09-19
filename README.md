@@ -20,11 +20,11 @@ pip install -r requirements.txt
 ## 本地启动 FAST API 测试
 
 ```bash
-uvicorn server.main:app --reload
+uvicorn src.main:app --reload
 ```
 
 ## 服务器启动脚本
 
 ```bash
-gunicorn main:app -c gunicorn.py
+gunicorn src.main:app -c gunicorn.py
 ```

@@ -1,24 +1,29 @@
-from typing import Union, List, Optional
-from fastapi import FastAPI
-from pydantic import BaseModel, Field
-from datetime import date
 import json, sqlite3, sys
+from typing import Union, List, Optional
+from fastapi import APIRouter,Depends
 from constants import DEFAULT_SQLITE_PATH
 
-from util.sqlite import get_new_date
-from util.type import ArchiveDesc
+from src.bulletin.schemas import DatePayload, Bulletin, getBulletinListInVersionReturn,bulletinAllInfo
+from src.bulletin.models import Bulletin
 
-app = FastAPI()
+from src.models import ArchiveDesc
 
-
-class DatePayload(BaseModel):
-    start_date: Optional[date] = Field(alias="startDate")
-    end_date: Optional[date] = Field(alias="endDate")
-    show_all_info: bool = Field(default=False, alias="showAllInfo")
+from sqlmodel import Session, select
+from src.database import get_session
 
 
-@app.post("/getBulletinByDate")
-def get_bulletin_by_date(payload: DatePayload):
+
+router = APIRouter()
+
+
+@router.get('/query')
+def query(id: Optional[int] = 1, db: Session = Depends(get_session)):
+    statement = select(Bulletin).where(Bulletin.id == id)
+    result = db.exec(statement)
+    return result.first()
+
+@router.post('/byDate')
+def bulletin_by_date(payload: DatePayload):
     conn = sqlite3.connect(DEFAULT_SQLITE_PATH)
     try:
         c = conn.cursor()
@@ -45,18 +50,9 @@ def get_bulletin_by_date(payload: DatePayload):
         return result
     except sqlite3.Error as e:
         return {"error": str(e)}
-
-class Bulletin(BaseModel):
-    date: str = ""
-    orderId:int = 0
-    totalLen:int = 0
-class getBulletinListInVersionReturn(BaseModel):
-    id: int 
-    acronyms: str
-    list: List[Bulletin]
-
-@app.get("/getBulletinListInVersion")
-def get_bulletin_list_in_version() -> List[getBulletinListInVersionReturn]:
+    
+@router.get('/listInVersion')
+def bulletin_list_in_version() -> List[getBulletinListInVersionReturn]:
     conn = sqlite3.connect(DEFAULT_SQLITE_PATH)
     try:
         cur = conn.cursor()
@@ -66,7 +62,8 @@ def get_bulletin_list_in_version() -> List[getBulletinListInVersionReturn]:
         cur.execute(sql_query_all_version)
         version_rows = cur.fetchall()
         version_list = [
-            getBulletinListInVersionReturn(id=row[0], acronyms=row[1], list=[]) for row in version_rows
+            getBulletinListInVersionReturn(id=row[0], acronyms=row[1], list=[])
+            for row in version_rows
         ]
         sql_query_bulletin = """
         SELECT bulletin_date,total_leng,order_id FROM bulletin
@@ -76,15 +73,40 @@ def get_bulletin_list_in_version() -> List[getBulletinListInVersionReturn]:
             cur.execute(sql_query_bulletin, (version.id,))
             bulletin_row = cur.fetchall()
             formatted_data = [
-                Bulletin(date=row[0], totalLen=row[1], orderId=row[2]) for row in bulletin_row
+                Bulletin(date=row[0], totalLen=row[1], orderId=row[2])
+                for row in bulletin_row
             ]
             version.list = formatted_data
         return version_list
     except sqlite3.Error as e:
         return [getBulletinListInVersionReturn(id=-1, acronyms=str(e), list=[])]
 
-@app.get("/getNewBulletin")
-def get_new_bulletin():
+
+def get_new_date(sqlitePath: str = DEFAULT_SQLITE_PATH) -> ArchiveDesc:
+    """取最新日期的一条数据
+    Args:
+        sqlitePath(str):数据库路径
+    Returns:
+        str:数据库中最新一条公告的数据 ArchiveDesc
+    """
+    conn = sqlite3.connect(sqlitePath)
+    cursor = conn.cursor()
+    # 查询最新日期的一条数据
+    cursor.execute("SELECT * FROM bulletin ORDER BY bulletin_date DESC LIMIT 1")
+    latest_row_date: tuple = cursor.fetchone()
+    conn.close()
+    json_date = json.loads(latest_row_date[3])
+    resolve_date = ArchiveDesc(
+        date=latest_row_date[1],
+        totalLen=latest_row_date[2],
+        contentTotalArr = json_date,
+        name=latest_row_date[4],
+        versionID = latest_row_date[5]
+    )
+    return resolve_date
+
+@router.get("/new")
+def new_bulletin():
     info: ArchiveDesc = get_new_date()
     con = sqlite3.connect(DEFAULT_SQLITE_PATH)
     try:

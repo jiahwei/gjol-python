@@ -9,17 +9,16 @@ from constants import DEFAULT_SQLITE_PATH
 conn = sqlite3.connect(DEFAULT_SQLITE_PATH)
 cur = conn.cursor()
 
-# cur.execute("ALTER TABLE bulletin RENAME COLUMN DATE TO bulletin_date;")
-# cur.execute("ALTER TABLE bulletin RENAME COLUMN totalLen TO total_leng;")
-# cur.execute("ALTER TABLE bulletin RENAME COLUMN orderID TO order_id;")
-# cur.execute("ALTER TABLE bulletin RENAME COLUMN contentTotalArr TO content_total_arr;")
-# cur.execute("ALTER TABLE bulletin RENAME COLUMN NAME TO bulletin_name;")
+cur.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='bulletin';")
+table_structure = cur.fetchone()
 
-cur.execute("ALTER TABLE version RENAME COLUMN ID TO id;")
-cur.execute("ALTER TABLE version RENAME COLUMN startdate TO start_date;")
-cur.execute("ALTER TABLE version RENAME COLUMN enddate TO end_date;")
+if table_structure:
+    print(table_structure[0])
+else:
+    print("Table 'bulletin' does not exist.")
 conn.commit()
 conn.close()
+
 
 # sql_query_all_version = """
 # SELECT id,acronyms from version
