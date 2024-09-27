@@ -5,18 +5,19 @@ from datetime import date
 
 
 class DatePayload(BaseModel):
-    start_date: Optional[date] = Field(alias="startDate")
-    end_date: Optional[date] = Field(alias="endDate")
+    start_date: Optional[date] = Field(None,alias="startDate")
+    end_date: Optional[date] = Field(None,alias="endDate")
     show_all_info: bool = Field(default=False, alias="showAllInfo")
 
-class Bulletin(BaseModel):
+
+class BulletinInfo(BaseModel):
     date: str = ""
     orderId:int = 0
     totalLen:int = 0
 class getBulletinListInVersionReturn(BaseModel):
     id: int 
     acronyms: str
-    list: List[Bulletin]
+    list: List[BulletinInfo]
 
 class bulletinAllInfo(BaseModel):
     id:int
