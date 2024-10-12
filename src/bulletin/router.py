@@ -1,14 +1,13 @@
-import json, sqlite3, sys
+import json
 from typing import Union, List, Optional
-from fastapi import APIRouter, Depends
-from sqlmodel import Session, select, and_
+from fastapi import APIRouter, Depends, HTTPException
+from sqlmodel import Session, select, and_, desc
 
-from constants import DEFAULT_SQLITE_PATH
 from src.bulletin.schemas import (
     DatePayload,
+    BaseBulletinInfo,
     BulletinInfo,
-    getBulletinListInVersionReturn,
-    bulletinAllInfo,
+    ListInVersionReturn,
 )
 from src.bulletin.models import Bulletin, Version
 from src.models import ArchiveDesc
@@ -18,7 +17,7 @@ from src.database import get_session
 router = APIRouter()
 
 
-@router.get("/query",response_model= Bulletin )
+@router.get("/query", response_model=Bulletin)
 def query(id: Optional[int] = 1, session: Session = Depends(get_session)):
     statement = select(Bulletin).where(Bulletin.id == id)
     result = session.exec(statement)
@@ -32,11 +31,7 @@ def query(id: Optional[int] = 1, session: Session = Depends(get_session)):
 
 @router.post("/byDate")
 def bulletin_by_date(payload: DatePayload, session: Session = Depends(get_session)):
-    statement = (
-        select(Bulletin)
-        if payload.show_all_info
-        else select(Bulletin.bulletin_date, Bulletin.total_leng)
-    )
+    statement = select(Bulletin)
     if payload.start_date and payload.end_date:
         statement = statement.where(
             and_(
@@ -45,104 +40,63 @@ def bulletin_by_date(payload: DatePayload, session: Session = Depends(get_sessio
             )
         )
         results = session.exec(statement).all()
-        response = []
-        if payload.show_all_info:
-            response = [
-                result.model_dump()
-                for result in results
-                if isinstance(result, Bulletin)
-            ]
-        else:
-            response = [{"bulletin_date": result[0], "total_leng": result[1]} for result in results] # type: ignore
+        response = [result.model_dump() for result in results]
         session.close()
         return response
     else:
         return []
 
 
-# @router.get('/listInVersion')
-# def bulletin_list_in_version() -> List[getBulletinListInVersionReturn]:
-#     conn = sqlite3.connect(DEFAULT_SQLITE_PATH)
-#     try:
-#         cur = conn.cursor()
-#         sql_query_all_version = """
-#         SELECT id,acronyms from version
-#         """
-#         cur.execute(sql_query_all_version)
-#         version_rows = cur.fetchall()
-#         version_list = [
-#             getBulletinListInVersionReturn(id=row[0], acronyms=row[1], list=[])
-#             for row in version_rows
-#         ]
-#         sql_query_bulletin = """
-#         SELECT bulletin_date,total_leng,order_id FROM bulletin
-#         WHERE version_id = ?
-#         """
-#         for version in version_list:
-#             cur.execute(sql_query_bulletin, (version.id,))
-#             bulletin_row = cur.fetchall()
-#             formatted_data = [
-#                 Bulletin(date=row[0], totalLen=row[1], orderId=row[2])
-#                 for row in bulletin_row
-#             ]
-#             version.list = formatted_data
-#         return version_list
-#     except sqlite3.Error as e:
-#         return [getBulletinListInVersionReturn(id=-1, acronyms=str(e), list=[])]
+@router.get("/listInVersion")
+def list_in_version(
+    session: Session = Depends(get_session),
+) -> List[ListInVersionReturn]:
+    statement = select(Version, Bulletin).where(Bulletin.version_id == Version.id)
+    results = session.exec(statement).all()
+    version_dict = {}
+    for version, bulletin in results:
+        if version.id not in version_dict:
+            version_dict[version.id] = ListInVersionReturn(id=version.id, acronyms=version.acronyms, list=[])
+        if bulletin:
+            version_dict[version.id].list.append(
+                BaseBulletinInfo(date=bulletin.bulletin_date, orderId=bulletin.order_id, totalLen=bulletin.total_leng)
+            )
 
-
-def get_new_date(sqlitePath: str = DEFAULT_SQLITE_PATH) -> ArchiveDesc:
-    """取最新日期的一条数据
-    Args:
-        sqlitePath(str):数据库路径
-    Returns:
-        str:数据库中最新一条公告的数据 ArchiveDesc
-    """
-    conn = sqlite3.connect(sqlitePath)
-    cursor = conn.cursor()
-    # 查询最新日期的一条数据
-    cursor.execute("SELECT * FROM bulletin ORDER BY bulletin_date DESC LIMIT 1")
-    latest_row_date: tuple = cursor.fetchone()
-    conn.close()
-    json_date = json.loads(latest_row_date[3])
-    resolve_date = ArchiveDesc(
-        date=latest_row_date[1],
-        totalLen=latest_row_date[2],
-        contentTotalArr=json_date,
-        name=latest_row_date[4],
-        versionID=latest_row_date[5],
-    )
-    return resolve_date
-
+    version_list = list(version_dict.values())
+    session.close()
+    return version_list
 
 @router.get("/new")
-def new_bulletin():
-    info: ArchiveDesc = get_new_date()
-    con = sqlite3.connect(DEFAULT_SQLITE_PATH)
-    try:
-        cur = con.cursor()
-        sql_query_version = """
-        SELECT acronyms from version where id = ?
-        """
-        cur.execute(sql_query_version, (info.versionID,))
-        rows = cur.fetchone()
-        archive_info = info.model_dump(exclude={"contentArr", "authors"})
-        archive_info["reselseName"] = rows[0]
-
-        sql_query_bulletin = """
-        SELECT bulletin_date,total_leng FROM bulletin
-        WHERE version_id = ?
-        ORDER BY total_leng DESC
-        """
-        cur.execute(sql_query_bulletin, (info.versionID,))
-        archive_list = cur.fetchall()
-        order = 0
-        for i, tup in enumerate(archive_list):
-            if tup[0] == info.date:
-                order = i
-                break
-        archive_info["order"] = order
-        con.close()
-        return archive_info
-    except sqlite3.Error as e:
-        return {"error": str(e)}
+def new_bulletin(session: Session = Depends(get_session)) -> BulletinInfo:
+    statement_new_bulletin = (
+        select(Bulletin,Version)
+        .where(Bulletin.version_id == Version.id)
+        .order_by(desc(Bulletin.bulletin_date)).limit(1)
+    )
+    result = session.exec(statement_new_bulletin).first()
+    if result is None:
+        raise HTTPException(status_code=404, detail="未找到公告")
+    bulletin_info, version_info = result
+        
+    statement_bulletin = (
+        select(Bulletin)
+        .where(Bulletin.version_id == bulletin_info.version_id)
+        .order_by(desc(Bulletin.total_leng))
+    )
+    bulletin_list_by_version_id = session.exec(statement_bulletin).all()
+    # 查找当前公告在列表中的位置
+    order = order = next((index for index, bulletin in enumerate(bulletin_list_by_version_id) if bulletin.id == bulletin_info.id), -1)
+    content_arr = json.loads(bulletin_info.content_total_arr)
+    # 构建返回的公告信息
+    bulletin_info = BulletinInfo(
+        id=bulletin_info.id,
+        date=bulletin_info.bulletin_date,
+        orderId=bulletin_info.order_id,
+        order=order,
+        name=bulletin_info.bulletin_name,
+        contentTotalArr=content_arr,
+        versionId=version_info.id,
+        versionName=version_info.name,
+    )
+    session.close()
+    return bulletin_info

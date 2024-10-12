@@ -15,4 +15,4 @@ class Version(SQLModel,table=True):
     start_date:str
     end_date:str
     total: int
-    acromyms:str
+    acronyms:str
