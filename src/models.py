@@ -22,6 +22,7 @@ class ArchiveDesc(BaseModel):
         authors(str）: 作者信息
         versionID(int) :公告归属的版本ID
         order(int) :公告归属的版本中按字数排序
+        totalLen (str): 公告类型
     """    
     date: str = ""
     totalLen: int = 0
@@ -29,6 +30,7 @@ class ArchiveDesc(BaseModel):
     name: str = ""
     versionID:int = 0
     order:int = 0
+    type:str = '1'
     authors: str = ""
     contentArr: List[Content_Completeness] = []
     

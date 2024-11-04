@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 from typing import Union, List, Optional
 
 from src.spiders.schemas import DownloadBulletin
+from constants import DEFAULT_SQLITE_PATH,BASEURL,DEFAULT_FLODER_PATH
 
 
 header = {
@@ -63,6 +64,23 @@ def get_download_bulletin_list(
             print(infoForA.attrs["title"])
     return resList
 
-def download_and_resolve_notice(download_bulletin_list:List[DownloadBulletin]):
+def download_notice(bulletin_info:DownloadBulletin):
+    is_routine_update = "更新维护公告" in bulletin_info.name
+    is_version_update = "资料片" in bulletin_info.name or "版本" in bulletin_info.name 
+    # is_skill_chnage = ("职业调整公告" in bulletin_info.name or "职业技能改动公告" in bulletin_info.name)
+
+    
     return []
     
+def folder_exists(folder_name: str, directory: str = DEFAULT_FLODER_PATH):
+    """判断 folder_name 是否存在于文件夹 directory 中
+
+    Args:
+        folder_name (str): 子文件夹名称
+        directory (str, optional): 父文件夹名称，默认 DEFAULT_FLODER_PATH.
+
+    Returns:
+        bool: _description_
+    """
+    folder_path = os.path.join(directory, folder_name)
+    return os.path.exists(folder_path)
