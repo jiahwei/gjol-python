@@ -37,5 +37,4 @@ def get_new_date() -> str | None:
         first_result = result.first()
         return first_result
 
-periodic_function()
 

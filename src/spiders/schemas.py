@@ -1,5 +1,6 @@
 from typing import Union, List, Optional
 from pydantic import BaseModel
+from enum import Enum
 
 class DownloadBulletin(BaseModel):
     """公告列表页面下载到的公告信息
@@ -12,3 +13,8 @@ class DownloadBulletin(BaseModel):
     name: str
     href: str
     date: str
+
+class BulletinType(Enum): 
+    ROUTINE = 'routine' 
+    SKILL = 'skill' 
+    VERSION = 'version'

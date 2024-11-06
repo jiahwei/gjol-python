@@ -1,5 +1,9 @@
 from sqlmodel import SQLModel, Field
 from typing import Optional
+from src.spiders.schemas import BulletinType
+
+
+
 class Bulletin(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     bulletin_date: str
@@ -8,11 +12,13 @@ class Bulletin(SQLModel, table=True):
     bulletin_name: Optional[str] = None
     version_id: Optional[int] = Field(default=None, foreign_key="version.id")
     order_id: int = Field(default=0)
+    type: str = Field(default=BulletinType.ROUTINE)
 
-class Version(SQLModel,table=True):
+
+class Version(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    name:str
-    start_date:str
-    end_date:str
+    name: str
+    start_date: str
+    end_date: str
     total: int
-    acronyms:str
+    acronyms: str
