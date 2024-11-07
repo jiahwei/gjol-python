@@ -6,8 +6,10 @@ from sqlmodel import Session,select,desc
 from typing import Union, List, Optional
 
 from src.bulletin.models import Bulletin
-from src.spiders.service import get_download_bulletin_list,get_list_url,download_notice
-from src.spiders.schemas import DownloadBulletin
+from src.bulletin_list.service import get_bulletin_list,get_list_url
+from src.spiders.service import download_notice
+from src.bulletin_list.schemas import DownloadBulletin
+
 
 
 scheduler = BackgroundScheduler()
@@ -20,7 +22,7 @@ def dayily_fun():
     first_date_str = get_new_date()
     for i in range(1):
         url = get_list_url(i)
-        download_bulletin_list = get_download_bulletin_list(url,first_date_str)
+        download_bulletin_list = get_bulletin_list(url,first_date_str)
         for bulletin_info in download_bulletin_list:
             download_notice(bulletin_info)
 
