@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 from sqlmodel import Session, select, and_, desc
 from typing import List
 
-
+from src.database import get_session,engine
 from src.bulletin_list.models import BulletinList
 from src.bulletin_list.schemas import DownloadBulletin
 
@@ -62,3 +62,13 @@ def get_bulletin_list(
         else:
             print(infoForA.attrs["title"])
     return resList
+
+
+def get_new_date() -> str | None:
+    """查询数据库bulletin_list中最新一条公告的日期
+    """    
+    with Session(engine) as session:
+        statement = select(BulletinList.date).order_by(desc(BulletinList.date)).limit(1)
+        result = session.exec(statement)
+        first_result = result.first()
+        return first_result
