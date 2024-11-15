@@ -6,7 +6,7 @@ from sqlmodel import Session,select,desc
 from typing import Union, List, Optional
 
 from src.bulletin.models import Bulletin
-from src.bulletin_list.service import get_bulletin_list,get_list_url
+from src.bulletin_list.service import get_bulletin_list,get_list_url,download_all_list
 from src.spiders.service import download_notice
 from src.bulletin_list.schemas import DownloadBulletin
 
@@ -38,5 +38,3 @@ def get_new_date() -> str | None:
         result = session.exec(statement)
         first_result = result.first()
         return first_result
-
-

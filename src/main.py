@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
-from src.task.daily import scheduler,apscheduler_start
+from src.task.daily import scheduler,apscheduler_start,dayily_fun
 from src.bulletin.router import router as bulletin_router
 from src.database import create_db_and_tables
 

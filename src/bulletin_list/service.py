@@ -1,16 +1,17 @@
-import requests 
+import requests,time,random
 from datetime import date, datetime, timedelta
 from bs4 import BeautifulSoup
 from sqlmodel import Session, select, and_, desc
 from typing import List
 
-from src.database import get_session,engine
+from src.database import get_session, engine
 from src.bulletin_list.models import BulletinList
 from src.bulletin_list.schemas import DownloadBulletin
 
 header = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36 Edg/117.0.2045.31"
 }
+
 
 def get_list_url(i: int) -> str:
     """返回公告列表的URL
@@ -29,9 +30,7 @@ def get_list_url(i: int) -> str:
     return base_url
 
 
-def get_bulletin_list(
-    url: str, first_date_str: str | None
-) -> List[DownloadBulletin]:
+def get_bulletin_list(url: str, first_date_str: str | None) -> List[DownloadBulletin]:
     """获取要下载的公告列表
 
     Args:
@@ -52,21 +51,53 @@ def get_bulletin_list(
         infoForA = li.a
         infoForTime = li.span
         date = datetime.strptime(infoForTime.string, "%Y-%m-%d")
+        info = DownloadBulletin(
+            name=infoForA.attrs["title"],
+            href=infoForA.attrs["href"],
+            date=infoForTime.string,
+        )
+        update_bulletin_list(info=info)
         if date > firstNoticeDate or first_date_str is None:
-            info = DownloadBulletin(
-                name=infoForA.attrs["title"],
-                href=infoForA.attrs["href"],
-                date=infoForTime.string,
-            )
             resList.append(info)
         else:
             print(infoForA.attrs["title"])
     return resList
 
 
+def download_all_list(url: str):
+    res = requests.get(url, headers=header).text
+    soup = BeautifulSoup(res, "lxml")
+    allList = soup.find("div", class_="list_box").find_all("li")  # type: ignore
+    resList: List[DownloadBulletin] = []
+    for li in allList:
+        infoForA = li.a
+        infoForTime = li.span
+        date = datetime.strptime(infoForTime.string, "%Y-%m-%d")
+        info = DownloadBulletin(
+            name=infoForA.attrs["title"],
+            href=infoForA.attrs["href"],
+            date=infoForTime.string,
+        )
+        update_bulletin_list(info=info)
+    sleeptime = random.randint(1, 10)
+    print(f"{time.ctime()}:{url}下载完成,等待{sleeptime}秒")
+    time.sleep(sleeptime)
+
+
+def update_bulletin_list(info: DownloadBulletin):
+    with Session(engine) as session:
+        new_bulletin = BulletinList(name=info.name, href=info.href, date=info.date)
+        try:
+            session.add(new_bulletin)
+            session.commit()
+            print("插入新数据成功")
+        except:
+            session.rollback()
+            print("数据已存在，不执行插入")
+
+
 def get_new_date() -> str | None:
-    """查询数据库bulletin_list中最新一条公告的日期
-    """    
+    """查询数据库bulletin_list中最新一条公告的日期"""
     with Session(engine) as session:
         statement = select(BulletinList.date).order_by(desc(BulletinList.date)).limit(1)
         result = session.exec(statement)
