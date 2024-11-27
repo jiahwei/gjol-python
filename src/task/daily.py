@@ -6,8 +6,8 @@ from sqlmodel import Session,select,desc
 from typing import Union, List, Optional
 
 from src.bulletin.models import Bulletin
-from src.bulletin_list.service import get_bulletin_list,get_list_url,download_all_list
-from src.spiders.service import download_notice
+from src.bulletin_list.service import download_bulletin_list
+from src.spiders.service import download_notice,resolve_notice
 from src.bulletin_list.schemas import DownloadBulletin
 
 
@@ -20,11 +20,11 @@ def periodic_function():
 
 def dayily_fun():
     first_date_str = get_new_date()
-    for i in range(1):
-        url = get_list_url(i)
-        download_bulletin_list = get_bulletin_list(url,first_date_str)
-        for bulletin_info in download_bulletin_list:
-            download_notice(bulletin_info)
+    bulletin_list = download_bulletin_list(first_date_str)
+    for bulletin_info in bulletin_list:
+        content_url =  download_notice(bulletin_info)
+        resolve_notice(content_url,bulletin_info)
+
 
 async def apscheduler_start():
     scheduler.add_job(periodic_function, 'interval', seconds=3)

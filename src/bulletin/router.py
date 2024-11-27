@@ -9,7 +9,8 @@ from src.bulletin.schemas import (
     BulletinInfo,
     ListInVersionReturn,
 )
-from src.bulletin.models import Bulletin, Version
+from src.bulletin.models import Bulletin
+from src.version.models import Version
 from src.models import ArchiveDesc
 from src.database import get_session
 
@@ -59,7 +60,7 @@ def list_in_version(
             version_dict[version.id] = ListInVersionReturn(id=version.id, acronyms=version.acronyms, list=[])
         if bulletin:
             version_dict[version.id].list.append(
-                BaseBulletinInfo(date=bulletin.bulletin_date, orderId=bulletin.order_id, totalLen=bulletin.total_leng)
+                BaseBulletinInfo(date=bulletin.bulletin_date, orderId=bulletin.rank_id, totalLen=bulletin.total_leng)
             )
 
     version_list = list(version_dict.values())
@@ -91,7 +92,7 @@ def new_bulletin(session: Session = Depends(get_session)) -> BulletinInfo:
     bulletin_info = BulletinInfo(
         id=bulletin_info.id,
         date=bulletin_info.bulletin_date,
-        orderId=bulletin_info.order_id,
+        orderId=bulletin_info.rank_id,
         order=order,
         name=bulletin_info.bulletin_name,
         contentTotalArr=content_arr,

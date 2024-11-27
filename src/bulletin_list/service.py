@@ -1,4 +1,4 @@
-import requests,time,random
+import requests, time, random, re
 from datetime import date, datetime, timedelta
 from bs4 import BeautifulSoup
 from sqlmodel import Session, select, and_, desc
@@ -13,7 +13,7 @@ header = {
 }
 
 
-def get_list_url(i: int) -> str:
+def get_list_url(i: int = 0) -> str:
     """返回公告列表的URL
 
     Args:
@@ -64,6 +64,26 @@ def get_bulletin_list(url: str, first_date_str: str | None) -> List[DownloadBull
     return resList
 
 
+def download_bulletin_list(
+    first_date_str: str | None, pageNum: int = 1
+) -> List[DownloadBulletin]:
+    """下载公告列表
+
+    Args:
+        first_date_str (str | None): 数据库中最新一条公告的日期
+        pageNum (int, optional): 下载几页公告. Defaults to 1.
+
+    Returns:
+        List[DownloadBulletin]: 公告列表
+    """
+    bulletin_list: List[DownloadBulletin] = []
+    for i in range(pageNum):
+        url = get_list_url(i)
+        new_list = get_bulletin_list(url, first_date_str)
+        bulletin_list.extend(new_list)
+    return bulletin_list
+
+
 def download_all_list(url: str):
     res = requests.get(url, headers=header).text
     soup = BeautifulSoup(res, "lxml")
@@ -103,3 +123,12 @@ def get_new_date() -> str | None:
         result = session.exec(statement)
         first_result = result.first()
         return first_result
+
+
+def get_bulletin_date(bulletin_info: DownloadBulletin) -> str:
+    year_month = bulletin_info.date[:-3]
+    match = re.search(r"(\d+)月(\d+)日", bulletin_info.name)
+    day = "01" if match is None else match.group(2)
+    date = f"{year_month}-{day}"
+    resolve_date = datetime.strptime(date, '%Y-%m-%d').strftime('%Y-%m-%d')
+    return resolve_date

@@ -7,3 +7,7 @@ DEFAULT_FLODER_PATH_ABSOLUTE = "bulletins"
 DEFAULT_UTIL_PATH = "./util"
 # 古网官网地址
 BASEURL = "http://gjol.wangyuan.com/"
+#默认header配置
+HEADER = {
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36 Edg/117.0.2045.31"
+}

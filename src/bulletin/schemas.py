@@ -1,7 +1,7 @@
 from typing import Union, List, Optional
 from pydantic import BaseModel, Field
 from datetime import date
-
+from src.spiders.schemas import BulletinType
 
 
 class DatePayload(BaseModel):
@@ -24,6 +24,7 @@ class BulletinInfo(BaseBulletinInfo):
     content_total_arr:Optional[List[ContentTotal]]= Field(None,alias="contentTotalArr")
     version_id:Optional[int| None] = Field(None,alias="versionId")
     version_name:Optional[str] = Field(None,alias="versionName")
+    type: str = Field(default=BulletinType.ROUTINE)
 
 class ListInVersionReturn(BaseModel):
     id: int | None
