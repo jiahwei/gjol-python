@@ -40,7 +40,8 @@ def filter_no_download_bulletin():
     with Session(engine) as session:
         statement = select(BulletinList)
         buletin_list = session.exec(statement).all()
-        for bulletin_info in buletin_list:
+        for res in buletin_list:
+            bulletin_info = DownloadBulletin(name=res.name, href=res.href, date=res.date)
             download_notice(bulletin_info)
             # bulletin_type = get_bulletin_type(bulletin_info.name)
             # floder_name = bulletin_info.date

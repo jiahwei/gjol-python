@@ -45,7 +45,7 @@ def download_notice(bulletin_info: DownloadBulletin) -> Optional[Path]:
     floder_name = bulletin_info.date
 
     if bulletin_type is None:
-        # logging.info(f"{bulletin_info.name},不是公告，不需要处理,跳过,{time.ctime()}")
+        logging.info(f"{bulletin_info.name},不是公告，不需要处理,跳过,{time.ctime()}")
         return None
 
     is_bulletin_download = check_bulletin_download(floder_name, bulletin_type)
@@ -56,12 +56,13 @@ def download_notice(bulletin_info: DownloadBulletin) -> Optional[Path]:
     )
     if is_bulletin_download:
         # 该公告已经下载过
-        # logging.info(f"{bulletin_info.name},已经下载过了,{time.ctime()}")
+        logging.info(f"{bulletin_info.name},已经下载过了,{time.ctime()}")
         return parent_path.joinpath("content.html")
-    sleeptime = random.randint(10, 40)
+    sleeptime = random.randint(5, 20)
     parent_path.mkdir()
     # 下载公告，保存为source.html
     logging.info(f"{bulletin_info.name},下载公告,{time.ctime()}")
+    print(f"{bulletin_info.name},下载公告,{time.ctime()}")
     url = bulletin_info.href.replace("/z/../", BASEURL)
     res = requests.get(url, headers=header).text
     soup = BeautifulSoup(res, "lxml")
@@ -82,6 +83,7 @@ def download_notice(bulletin_info: DownloadBulletin) -> Optional[Path]:
     content_file_name.write_text(str(details))
 
     logging.info(f"{time.ctime()}:{bulletin_info.name}下载完成,等待{sleeptime}秒")
+    print(f"{time.ctime()}:{bulletin_info.name}下载完成,等待{sleeptime}秒")
     time.sleep(sleeptime)
 
     return content_file_name
