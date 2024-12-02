@@ -1,6 +1,6 @@
 from sqlmodel import SQLModel, Field
 from typing import Optional
-from src.spiders.schemas import BulletinType
+from src.bulletin_list.schemas import BulletinType
 
 
 

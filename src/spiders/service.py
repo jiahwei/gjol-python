@@ -5,9 +5,9 @@ from lxml import etree, html
 from bs4 import BeautifulSoup, Tag
 from typing import Union, List, Optional
 
-from src.spiders.schemas import BulletinType
 from src.bulletin_list.schemas import DownloadBulletin
-from src.bulletin_list.service import get_bulletin_date
+from src.bulletin_list.service import get_bulletin_date,get_bulletin_type
+from src.bulletin_list.schemas import BulletinType
 from src.bulletin.models import Bulletin
 from src.bulletin.schemas import ContentTotal
 from src.version.service import get_version_info_by_bulletin_date
@@ -44,7 +44,7 @@ def download_notice(bulletin_info: DownloadBulletin) -> Optional[Path]:
     bulletin_type = get_bulletin_type(bulletin_info.name)
     floder_name = bulletin_info.date
 
-    if bulletin_type is None:
+    if bulletin_type in {BulletinType.CIRCULAR, BulletinType.OTHER}:
         logging.info(f"{bulletin_info.name},不是公告，不需要处理,跳过,{time.ctime()}")
         return None
 
@@ -58,6 +58,8 @@ def download_notice(bulletin_info: DownloadBulletin) -> Optional[Path]:
         # 该公告已经下载过
         logging.info(f"{bulletin_info.name},已经下载过了,{time.ctime()}")
         return parent_path.joinpath("content.html")
+    logging.info(f"{bulletin_info.name},未处理？")
+    return None
     sleeptime = random.randint(5, 20)
     parent_path.mkdir()
     # 下载公告，保存为source.html
@@ -182,30 +184,6 @@ def extract_bulletin_contents(text: str) -> List[ContentTotal]:
             bulletin = ContentTotal(name=name, leng=content_leng)
             bulletins.append(bulletin.model_dump())
     return bulletins
-
-
-def get_bulletin_type(bulletin_name: str) -> Optional[BulletinType]:
-    """返回公告类型
-
-    Args:
-        bulletin_name (str): 公告名称
-
-    Returns:
-        BulletinType | None: 公告类型或None
-    """
-    is_routine_update = "更新维护公告" in bulletin_name
-    is_version_update = "资料片" in bulletin_name or "版本" in bulletin_name
-    is_skill_change = (
-        "职业调整公告" in bulletin_name or "职业技能改动公告" in bulletin_name
-    )
-    if is_skill_change:
-        return BulletinType.SKILL
-    elif is_version_update:
-        return BulletinType.VERSION
-    elif is_routine_update:
-        return BulletinType.ROUTINE
-    else:
-        return None
 
 
 def check_bulletin_download(folder_date: str, bulletin_type: BulletinType) -> bool:

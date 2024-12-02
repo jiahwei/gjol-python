@@ -7,3 +7,4 @@ class BulletinList(SQLModel, table=True):
     name:str
     href: str
     date: str
+    type:str = Field(default=None)

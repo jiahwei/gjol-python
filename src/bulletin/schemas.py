@@ -1,7 +1,7 @@
 from typing import Union, List, Optional
 from pydantic import BaseModel, Field
 from datetime import date
-from src.spiders.schemas import BulletinType
+from src.bulletin_list.schemas import BulletinType
 
 
 class DatePayload(BaseModel):

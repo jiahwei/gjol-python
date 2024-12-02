@@ -6,7 +6,7 @@ from typing import List
 
 from src.database import get_session, engine
 from src.bulletin_list.models import BulletinList
-from src.bulletin_list.schemas import DownloadBulletin
+from src.bulletin_list.schemas import DownloadBulletin,BulletinType
 
 header = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36 Edg/117.0.2045.31"
@@ -106,7 +106,8 @@ def download_all_list(url: str):
 
 def update_bulletin_list(info: DownloadBulletin):
     with Session(engine) as session:
-        new_bulletin = BulletinList(name=info.name, href=info.href, date=info.date)
+        bulletin_type = get_bulletin_type(info.name)
+        new_bulletin = BulletinList(name=info.name, href=info.href, date=info.date ,type=bulletin_type.value)
         try:
             session.add(new_bulletin)
             session.commit()
@@ -132,3 +133,23 @@ def get_bulletin_date(bulletin_info: DownloadBulletin) -> str:
     date = f"{year_month}-{day}"
     resolve_date = datetime.strptime(date, '%Y-%m-%d').strftime('%Y-%m-%d')
     return resolve_date
+
+
+def get_bulletin_type(bulletin_name: str) -> BulletinType:
+    """返回公告类型
+
+    Args:
+        bulletin_name (str): 公告名称
+
+    Returns:
+        BulletinType | None: 公告类型或 None
+    """
+    if ("职业" in bulletin_name or "技能" in bulletin_name) and '《古剑奇谭网络版》' in bulletin_name:
+        return BulletinType.SKILL
+    if ("资料片" in bulletin_name or "版本" in bulletin_name) and '更新' in bulletin_name and '公告' in bulletin_name:
+        return BulletinType.VERSION
+    if "更新维护公告" in bulletin_name:
+        return BulletinType.ROUTINE
+    if "通告" in bulletin_name:
+        return BulletinType.CIRCULAR
+    return BulletinType.OTHER
