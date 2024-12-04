@@ -2,7 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 from datetime import date, datetime, timedelta
 from typing import Union, List, Optional
-from sqlmodel import Session, select, and_, desc,or_
+from sqlmodel import Session, select, and_, desc,or_,delete
 
 from src.database import get_session, engine
 from src.bulletin.models import Bulletin
@@ -81,3 +81,21 @@ def get_version_info_by_bulletin_date(bulletin_date: str,total_leng:int) -> Vers
             rank += 1
         return VersionInfo(version_id=version_id,rank = -1)
 
+
+def sort_version():
+    with Session(engine) as session:
+        statement = select(Version).order_by(Version.start_date)
+        sorted_versions = session.exec(statement).all()
+
+
+        delete_statement = select(Version)
+        old_versions = session.exec(delete_statement).all()
+        for version in old_versions:
+            session.delete(version)
+
+        session.commit()
+        for i, version in enumerate(sorted_versions):
+            new_version = Version(id= i + 1, name=version.name, start_date=version.start_date, end_date=version.end_date, acronyms=version.acronyms, fake_version=version.fake_version, total=version.total )
+            session.add(new_version)
+
+        session.commit()

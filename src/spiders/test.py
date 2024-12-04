@@ -1,4 +1,5 @@
-import time,os,shutil
+import time,os,shutil,re
+from datetime import date, datetime, timedelta
 from sqlmodel import Session, select, and_, desc,update
 from src.database import get_session, engine
 from pathlib import Path
@@ -7,7 +8,7 @@ from bs4 import BeautifulSoup, Tag
 from constants import DEFAULT_FLODER_PATH_ABSOLUTE,BASEURL,DEFAULT_FLODER_PATH
 from src.bulletin_list.models import BulletinList
 from src.bulletin_list.schemas import DownloadBulletin,BulletinType
-from src.bulletin_list.service import get_bulletin_date,get_bulletin_type
+from src.bulletin_list.service import get_bulletin_date,get_bulletin_type,get_really_bulletin_date
 from src.spiders.service import download_notice,resolve_notice
 
 from pathlib import Path
@@ -28,14 +29,15 @@ def test_resolve_notice(test_dade = None):
         buletin_list = session.exec(statement).all()
         for res in buletin_list:
             if res is not None:
-                bulletin_info = DownloadBulletin(name=res.name, href=res.href, date=res.date)
+                new_date = get_really_bulletin_date(res)
+                bulletin_info = DownloadBulletin(name=res.name, href=res.href, date=new_date)
                 content_url = download_notice(bulletin_info)
-                bulletin =  resolve_notice(content_url, bulletin_info)
-                if bulletin is None:
-                    logging.warning(f"get bulletin None:{bulletin_info.name}") 
-                else:
-                    logging.info(f"get bulletin:{bulletin_info.name},{bulletin_info.date}")
-                    logging.info(bulletin.model_dump_json())
+                # bulletin =  resolve_notice(content_url, bulletin_info)
+                # if bulletin is None:
+                #     logging.warning(f"get bulletin None:{bulletin_info.name}") 
+                # else:
+                #     logging.info(f"get bulletin:{bulletin_info.name},{bulletin_info.date}")
+                #     logging.info(bulletin.model_dump_json())
             else:
                 logging.debug("No bulletin_info found for the given date") 
 
@@ -51,20 +53,21 @@ def bulletin_type():
 
 recycle_bin_path = Path(DEFAULT_FLODER_PATH_ABSOLUTE).joinpath('recycleBin')
 def resolve_file():
-    root_dir_path = Path(DEFAULT_FLODER_PATH_ABSOLUTE).joinpath('version')
+    root_dir_path = Path(DEFAULT_FLODER_PATH_ABSOLUTE).joinpath('routine')
+    # root_dir_path = Path(recycle_bin_path).joinpath('routine')
     for root, dirs, files in os.walk(root_dir_path):
-        if root != "bulletins/version" and  'source.html' in files:
+        if root != "bulletins/routine" and  'source.html' in files:
             file_path = Path(root).joinpath('source.html')
             content = file_path.read_text(encoding="utf-8")
             soup = BeautifulSoup(content, "html5lib")
             title_tag  = soup.title
             if isinstance(title_tag, Tag):
                 type = get_bulletin_type(title_tag.text)
-                if type in {BulletinType.VERSION} :
-                    logging.info(f'VERSION{title_tag.text}')
+                if type in {BulletinType.ROUTINE} :
+                    logging.info(f'{title_tag.text},{root}')
                 else:
                     logging.info(f'{title_tag.text},type:{type.value}')
-                    dst_path = recycle_bin_path.joinpath(type.value)
+                    # dst_path = recycle_bin_path.joinpath(type.value)
                     # logging.info(Path(root))
                     # logging.info(dst_path)
                     # shutil.move(Path(root), dst_path)
@@ -73,3 +76,31 @@ def resolve_file():
             # logging.info(f"roots,{root}")
             # logging.info(f"dirs,{dirs}")
             # logging.info(f"files,{files}")
+
+
+def rename_file(type='routine'):
+    root_dir_path = Path(DEFAULT_FLODER_PATH_ABSOLUTE).joinpath(type)
+    for root, dirs, files in os.walk(root_dir_path):
+        if root != f"bulletins/{type}" and  'source.html' in files:
+            file_path = Path(root).joinpath('source.html')
+            content = file_path.read_text(encoding="utf-8")
+            soup = BeautifulSoup(content, "html5lib")
+            title_tag  = soup.title
+            if isinstance(title_tag, Tag):
+                title_name = title_tag.text
+                date_pattern = re.compile(r'(\d{1,2})月(\d{1,2})日')
+                dates = date_pattern.findall(title_name)
+                date_pattern_root = r'\d{4}-\d{2}-\d{2}'
+                match = re.search(date_pattern_root, root.__str__())
+                if match is None:
+                    logging.info(f'root{date_pattern_root},{root}')
+                    return
+                root_date = match.group()
+                date_obj = datetime.strptime(root_date, '%Y-%m-%d')
+                new_date_obj =date_obj.replace(month=int(dates[0][0]), day=int(dates[0][1]))
+                new_date = new_date_obj.strftime('%Y-%m-%d')
+                if root_date != new_date:
+                    logging.info(f'old - {root_date},new - {new_date}')
+                    # new_root = Path(root).with_name(new_date) 
+                    # root_path = Path(root) 
+                    # root_path.rename(new_root)

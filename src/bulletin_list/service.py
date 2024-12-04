@@ -153,3 +153,32 @@ def get_bulletin_type(bulletin_name: str) -> BulletinType:
     if "通告" in bulletin_name:
         return BulletinType.CIRCULAR
     return BulletinType.OTHER
+
+
+def get_really_bulletin_date(bulletin_info: BulletinList) -> str:
+    """公告列表中的日期多数是周三，处理成周四。因为bulletins文件夹中使用更新日（周四）作为文件名
+
+    Args:
+        bulletin_info (BulletinList): _description_
+
+    Returns:
+        str: 处理后的日期
+    """
+    # 混沌初开，没什么规律，直接跳过
+    filter_list = ['2018-07-07','2018-07-10']
+    if bulletin_info.date in filter_list:
+        return bulletin_info.date
+    
+    date_obj = datetime.strptime(bulletin_info.date, '%Y-%m-%d')
+    week_day = date_obj.weekday()
+
+    # 如果日期是周一至周三，调整到当周的周四
+    if week_day in {0, 1, 2}:  # 周一到周三
+        days_to_add = 3 - week_day
+        date_obj += timedelta(days=days_to_add)
+    elif week_day in {4, 5, 6}:  # 周五到周日
+        days_to_add = 10 - week_day  # 调整到下周四
+        date_obj += timedelta(days=days_to_add)
+
+    # 返回处理后的日期
+    return date_obj.strftime('%Y-%m-%d')

@@ -45,7 +45,7 @@ def download_notice(bulletin_info: DownloadBulletin) -> Optional[Path]:
     floder_name = bulletin_info.date
 
     if bulletin_type in {BulletinType.CIRCULAR, BulletinType.OTHER}:
-        logging.info(f"{bulletin_info.name},不是公告，不需要处理,跳过,{time.ctime()}")
+        # logging.info(f"{bulletin_info.name},不是公告，不需要处理,跳过,{time.ctime()}")
         return None
 
     is_bulletin_download = check_bulletin_download(floder_name, bulletin_type)
@@ -56,9 +56,9 @@ def download_notice(bulletin_info: DownloadBulletin) -> Optional[Path]:
     )
     if is_bulletin_download:
         # 该公告已经下载过
-        logging.info(f"{bulletin_info.name},已经下载过了,{time.ctime()}")
+        # logging.info(f"{bulletin_info.name},已经下载过了,{time.ctime()}")
         return parent_path.joinpath("content.html")
-    logging.info(f"{bulletin_info.name},未处理？")
+    logging.info(f"{bulletin_info.name},{bulletin_info.date},未处理？")
     return None
     sleeptime = random.randint(5, 20)
     parent_path.mkdir()
