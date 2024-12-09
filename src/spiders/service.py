@@ -59,7 +59,6 @@ def download_notice(bulletin_info: DownloadBulletin) -> Optional[Path]:
         # logging.info(f"{bulletin_info.name},已经下载过了,{time.ctime()}")
         return parent_path.joinpath("content.html")
     logging.info(f"{bulletin_info.name},{bulletin_info.date},未处理？")
-    return None
     sleeptime = random.randint(5, 20)
     parent_path.mkdir()
     # 下载公告，保存为source.html
@@ -70,7 +69,7 @@ def download_notice(bulletin_info: DownloadBulletin) -> Optional[Path]:
     soup = BeautifulSoup(res, "lxml")
 
     source_file_name = parent_path.joinpath("source.html")
-    source_file_name.write_text(str(soup))
+    source_file_name.write_text(str(soup),encoding='utf-8')
 
     # 过滤不需要的标签,生成content.html
     for excludedDivName in ["more_button", "bdsharebuttonbox"]:
@@ -82,7 +81,7 @@ def download_notice(bulletin_info: DownloadBulletin) -> Optional[Path]:
         tag.extract()
     details = soup.find("div", class_="details")
     content_file_name = parent_path.joinpath("content.html")
-    content_file_name.write_text(str(details))
+    content_file_name.write_text(str(details),encoding='utf-8')
 
     logging.info(f"{time.ctime()}:{bulletin_info.name}下载完成,等待{sleeptime}秒")
     print(f"{time.ctime()}:{bulletin_info.name}下载完成,等待{sleeptime}秒")
@@ -198,4 +197,10 @@ def check_bulletin_download(folder_date: str, bulletin_type: BulletinType) -> bo
     """
     parent_path = Path(DEFAULT_FLODER_PATH_ABSOLUTE).joinpath(bulletin_type.value)
     bulletin_path = parent_path.joinpath(folder_date)
-    return bulletin_path.exists() and bulletin_path.is_dir()
+    if bulletin_path.exists() and bulletin_path.is_dir():
+        # 检查 source.html 和 content.html 文件是否存在
+        source_file = bulletin_path.joinpath("source.html")
+        content_file = bulletin_path.joinpath("content.html")
+        return source_file.exists() and content_file.exists()
+    
+    return False
