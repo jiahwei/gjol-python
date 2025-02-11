@@ -154,7 +154,19 @@ def resolve_notice(
     resolve_bulletin = Bulletin(**base_bulletin.model_dump())
     return resolve_bulletin
     
-
+def resolve_notice_by_spacy(
+    content_path: Optional[Path], bulletin_info: DownloadBulletin
+) -> Bulletin | None:
+    if content_path is None:
+        logging.warning("content_path is None")
+        return None
+    base_bulletin:Bulletin = get_base_bulletin(content_path, bulletin_info)
+    content = content_path.read_text(encoding="utf-8")
+    soup = BeautifulSoup(content, "html5lib")
+    
+    content_text = soup.get_text()
+    resolve_bulletin = Bulletin(**base_bulletin.model_dump())
+    return resolve_bulletin        
 
 
 def extract_between_markers(text: str, markers: list) -> str | None:

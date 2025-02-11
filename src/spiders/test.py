@@ -9,7 +9,7 @@ from constants import DEFAULT_FLODER_PATH_ABSOLUTE,BASEURL,DEFAULT_FLODER_PATH
 from src.bulletin_list.models import BulletinList
 from src.bulletin_list.schemas import DownloadBulletin,BulletinType
 from src.bulletin_list.service import get_bulletin_date,get_bulletin_type,get_really_bulletin_date
-from src.spiders.service import download_notice,resolve_notice
+from src.spiders.service import download_notice,resolve_notice,resolve_notice_by_spacy
 
 from pathlib import Path
 import logging
@@ -32,12 +32,14 @@ def test_resolve_notice(test_dade = None):
                 new_date = get_really_bulletin_date(res)
                 bulletin_info = DownloadBulletin(name=res.name, href=res.href, date=new_date)
                 content_url = download_notice(bulletin_info)
-                # bulletin =  resolve_notice(content_url, bulletin_info)
-                # if bulletin is None:
-                #     logging.warning(f"get bulletin None:{bulletin_info.name}") 
-                # else:
-                #     logging.info(f"get bulletin:{bulletin_info.name},{bulletin_info.date}")
-                #     logging.info(bulletin.model_dump_json())
+                bulletin =  resolve_notice(content_url, bulletin_info)
+                # bulletin =  resolve_notice_by_spacy(content_url, bulletin_info)
+                if bulletin is None:
+                    logging.warning(f"get bulletin None:{bulletin_info.name}") 
+                    break
+                else:
+                    logging.info(f"get bulletin:{bulletin_info.name},{bulletin_info.date}")
+                    logging.info(bulletin.model_dump_json())
             else:
                 logging.debug("No bulletin_info found for the given date") 
 
