@@ -4,7 +4,20 @@ from fastapi import FastAPI
 from src.task.daily import scheduler,apscheduler_start
 from src.bulletin.router import router as bulletin_router
 from src.database import create_db_and_tables
-from src.spiders.test import test_resolve_notice,bulletin_type,resolve_file,rename_file
+from src.spiders.test import test_resolve_notice
+from src.nlp.train_model import train
+from src.nlp.make_data import add_all_html
+from src.logs.service import LOGGING_CONFIG
+
+import logging.config
+
+def setup_logging():
+    try:
+        logging.config.dictConfig(LOGGING_CONFIG)
+    except Exception as e:
+        print(f"Error in Logging Configuration: {e}")
+        logging.basicConfig(level=logging.DEBUG)
+setup_logging()
 
 ml_models = {}
 
@@ -14,7 +27,9 @@ async def lifespan(app: FastAPI):
     ml_models["create_db_and_tables"] = create_db_and_tables
     # ml_models["apscheduler_start"] = apscheduler_start
     # await apscheduler_start()
-    test_resolve_notice()
+    # test_resolve_notice()
+    # train()
+    add_all_html()
     yield
     # Clean up the ML models and release resources
     # scheduler.shutdown()

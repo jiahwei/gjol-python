@@ -12,14 +12,7 @@ from constants import HEADER
 
 
 import logging
-from pathlib import Path
-loggig_path = Path("src").joinpath("spiders").joinpath("test.log")
-logging.basicConfig(
-    filename=loggig_path,
-    filemode="a",
-    level=logging.DEBUG,
-    format="%(name)s - %(levelname)s - %(message)s",
-)
+logger = logging.getLogger('spiders_test')
 
 def download_reslease():
     """下载版本数据"""
@@ -69,10 +62,10 @@ def get_version_info_by_bulletin_date(bulletin_date: str,total_leng:int) -> Vers
             .order_by(desc(Bulletin.total_leng))
         )
         bulletin_list_by_version_id = session.exec(statement_bulletin).all()
-        logging.info('bulletin_list_by_version_id')
-        logging.info(bulletin_list_by_version_id)
+        logger.info('bulletin_list_by_version_id')
+        logger.info(bulletin_list_by_version_id)
         if(len(bulletin_list_by_version_id) == 0):
-            logging.warning('order 设置失败')
+            logger.warning('order 设置失败')
             return VersionInfo(version_id=version_id,rank = -1)
         rank = 1
         for bulletin in bulletin_list_by_version_id:

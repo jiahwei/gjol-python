@@ -11,10 +11,8 @@ from util.sqlite import insert_archive_desc
 from constants import DEFAULT_SQLITE_PATH,BASEURL,DEFAULT_FLODER_PATH
 
 import logging
+logger = logging.getLogger('spiders_test')
 
-logging.basicConfig(
-    filename="app.log", filemode="w", format="%(name)s - %(levelname)s - %(message)s"
-)
 
 # from bs4FindFun import bs4FindFun
 header = {
@@ -223,14 +221,14 @@ def categorization_by_bs4(path: str, noticeInfo: NoticeInfo):
     if len(typeList) == 0:
         warnText = "捕获规则失效：{}".format(path)
         warnings.warn(warnText)
-        logging.warning(warnText)
+        logger.warning(warnText)
         textList = list(text for text in soup.stripped_strings)
         allText = "".join(textList)
         totalLen = len(allText)
         if not len(notice_date) == 0:
             notice_date_warn = "日期无效：{}".format(path)
             warnings.warn(notice_date_warn)
-            logging.warning(notice_date_warn)
+            logger.warning(notice_date_warn)
         categorization.date = notice_date
         categorization.totalLen = totalLen
         return categorization
@@ -268,7 +266,7 @@ def categorization_by_bs4(path: str, noticeInfo: NoticeInfo):
                     )
                 )
                 warnings.warn(notice_date_warn)
-                logging.warning(notice_date_warn)
+                logger.warning(notice_date_warn)
             categorization.date = notice_date
             # 如果存在就删除礼貌用语
             if textArr[len(textArr) - 1] == "祝大家游戏愉快！":
