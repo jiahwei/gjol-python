@@ -65,10 +65,9 @@ def nlp_test(
     paragraphs = details_div.find_all("p")
     for p in paragraphs:
         p_text = p.text
-        logger.info(f"原始：{p_text}")
         words = preprocess_text(p_text)
         # logger.info(f"分词：{words}")
         category = predict_paragraph_category(words)
-        logger.info(f"类别：{category}")
+        logger.info(f"{p_text},类别：{category}")
 
 

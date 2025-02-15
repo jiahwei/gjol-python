@@ -1,13 +1,15 @@
 import pandas as pd
+import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import MultinomialNB
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report
 import joblib
 from pathlib import Path
 from src.nlp.service import preprocess_text
-
+from collections import Counter
 
 def train():
     # 1. 加载数据集
@@ -17,7 +19,11 @@ def train():
     # 确保数据有 'paragraph' 和 'label' 两列
     if 'paragraph' not in data.columns or 'label' not in data.columns:
         raise ValueError("数据集应包含 'paragraph' 和 'label' 两列。")
-
+    label_counts = Counter(data['label'])
+    print("数据分布:")
+    for label, count in label_counts.items():
+        print(f"{label}: {count}")
+    
     # 2. 文本预处理
 
     print("正在预处理文本...")
@@ -30,7 +36,7 @@ def train():
     # 4. 分割训练集和测试集
     X = data['processed_paragraph']
     y = data['label_encoded']
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, stratify=y, random_state=42)
 
     # 5. 特征提取
     print("正在提取特征...")
@@ -40,13 +46,21 @@ def train():
 
     # 6. 训练模型
     print("正在训练模型...")
-    model = MultinomialNB()
+    # model = MultinomialNB()
+    # model.fit(X_train_tfidf, y_train)
+    model = LogisticRegression(max_iter=1000, class_weight='balanced')
     model.fit(X_train_tfidf, y_train)
+
 
     # 7. 模型评估
     print("正在评估模型...")
     y_pred = model.predict(X_test_tfidf)
-    report = classification_report(y_test, y_pred, target_names=label_encoder.classes_)
+    # 获取实际的测试类别
+    actual_classes = np.unique(y_test)
+    target_names = label_encoder.inverse_transform(actual_classes)
+
+    # 生成分类报告，指定 labels 参数
+    report = classification_report(y_test, y_pred, labels=actual_classes, target_names=target_names)
     print(report)
 
     # 8. 保存模型和相关对象

@@ -7,7 +7,7 @@ from src.bulletin_list.schemas import DownloadBulletin,BulletinType
 from src.bulletin_list.service import get_bulletin_date,get_bulletin_type,get_really_bulletin_date
 from src.spiders.service import download_notice,resolve_notice,resolve_notice_by_spacy
 
-import logging,json
+import logging,json,csv
 logger = logging.getLogger('nlp_test')
 
 import pandas as pd
@@ -18,7 +18,7 @@ def add_all_html():
         statement = select(BulletinList).where(BulletinList.type != 'circular')
         buletin_list = session.exec(statement).all()
         data = []
-        for res in buletin_list[1:5]:
+        for res in buletin_list[200:202]:
             if res is not None:
                 new_date = get_really_bulletin_date(res)
                 bulletin_info = DownloadBulletin(name=res.name, href=res.href, date=new_date)
@@ -35,15 +35,9 @@ def add_all_html():
                 paragraphs = details_div.find_all("p")
                 paragraph_texts = [p.get_text(strip=True) for p in paragraphs]
                 for p_text in paragraph_texts:
-                    data.append({'paragraph':p_text,'source_file':res.name})
+                    data.append({'paragraph':p_text,'source_file':res.name,"label":'TEST'})
             else:
                 print("No bulletin_info found for the given date")
         logger.info(data)
         df = pd.DataFrame(data)
-        with open('data/paragraphs_updated.csv', 'w', encoding='utf-8') as f:
-            for _, row in df.iterrows():
-                data = {
-                    'text':row['paragraph'],
-                    'labels':''
-                }
-                f.write(json.dumps(data, ensure_ascii=False) + '\n')
+        df[['paragraph', 'label']].to_csv('data/paragraphs_updated.csv',mode='a', index=False, header=False, quoting=csv.QUOTE_ALL)
