@@ -69,5 +69,6 @@ def nlp_test(
         # logger.info(f"分词：{words}")
         category = predict_paragraph_category(words)
         logger.info(f"{p_text},类别：{category}")
+    return base_bulletin
 
 

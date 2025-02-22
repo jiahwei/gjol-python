@@ -30,7 +30,7 @@ def test_resolve_notice(test_dade = None):
                 # bulletin =  resolve_notice_by_spacy(content_url, bulletin_info)
                 if bulletin is None:
                     logging.warning(f"get bulletin None:{bulletin_info.name}") 
-                    break
+                    continue
                 else:
                     logging.info(f"get bulletin:{bulletin_info.name},{bulletin_info.date}")
                     logging.info(bulletin.model_dump_json())
