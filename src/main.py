@@ -5,8 +5,8 @@ from src.task.daily import scheduler,apscheduler_start
 from src.bulletin.router import router as bulletin_router
 from src.database import create_db_and_tables
 from src.spiders.test import test_resolve_notice
-from src.nlp.train_model import train
-from src.nlp.make_data import add_all_html
+from src.nlp.train_model import train_model
+from src.nlp.make_data import make_train_csv
 from src.logs.service import LOGGING_CONFIG
 
 import logging.config
@@ -27,8 +27,9 @@ async def lifespan(app: FastAPI):
     ml_models["create_db_and_tables"] = create_db_and_tables
     # ml_models["apscheduler_start"] = apscheduler_start
     # await apscheduler_start()
-    test_resolve_notice()
-    # train()
+    # test_resolve_notice()
+    make_train_csv()
+    # train_model()
     # add_all_html()
     yield
     # Clean up the ML models and release resources
