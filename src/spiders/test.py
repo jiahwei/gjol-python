@@ -20,7 +20,7 @@ def test_resolve_notice(test_dade = None):
     with Session(engine) as session:
         statement = select(BulletinList) if test_dade is None else select(BulletinList) .where(BulletinList.date == test_dade)
         buletin_list = session.exec(statement).all()
-        for res in buletin_list:
+        for res in buletin_list[203:210]:
             if res is not None:
                 new_date = get_really_bulletin_date(res)
                 bulletin_info = DownloadBulletin(name=res.name, href=res.href, date=new_date)

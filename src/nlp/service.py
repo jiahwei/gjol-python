@@ -67,8 +67,9 @@ def nlp_test(
         p_text = p.text
         words = preprocess_text(p_text)
         # logger.info(f"分词：{words}")
-        category = predict_paragraph_category(words)
-        logger.info(f"{p_text},类别：{category}")
+        if words.strip():
+            category = predict_paragraph_category(words)
+            logger.info(f"{p_text},段落类型：{category}")
     return base_bulletin
 
 
