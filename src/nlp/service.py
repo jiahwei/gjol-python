@@ -21,6 +21,20 @@ vectorizer = joblib.load(models_dir.joinpath('tfidf_vectorizer.model'))
 label_encoder = joblib.load(models_dir.joinpath('label_encoder.model'))
 
 def preprocess_text(text: str) -> str:
+    """
+    预处理输入文本，执行以下步骤：
+    1. 将多个空白字符替换为一个空格。
+    2. 移除所有非字母数字字符（空白字符除外）。
+    3. 去除首尾空白字符。
+    4. 使用THULAC进行分词和词性标注。
+    5. 从分词结果中移除停用词。
+
+    参数:
+        text (str): 要预处理的输入文本。
+
+    返回:
+        str: 预处理后的文本，停用词被移除，单词用空格连接。
+    """
     text = re.sub(r'\s+', ' ', text)
     text = re.sub(r'[^\w\s]', '', text)
     text = text.strip()

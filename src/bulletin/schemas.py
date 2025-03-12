@@ -2,6 +2,24 @@ from typing import Union, List, Optional
 from pydantic import BaseModel, Field
 from datetime import date
 from src.bulletin_list.schemas import BulletinType
+from enum import Enum
+
+
+
+class baseParagraphTopic(Enum):
+    START = "开头"
+    END = "署名/结尾"
+    UNUPDATE = "无更新"
+
+class PlayModeParagraphTopic(Enum):
+    PVE = "PVE"
+    PVP = "PVP"
+    PVX = "PVX"
+class ParagraphTopic(Enum):
+    SKILL = "技能改动"
+    RAID = "副本"
+    STORE = "商城"
+    EVENT = "活动" 
 
 
 class DatePayload(BaseModel):

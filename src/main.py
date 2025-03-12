@@ -28,7 +28,7 @@ async def lifespan(app: FastAPI):
     # ml_models["apscheduler_start"] = apscheduler_start
     # await apscheduler_start()
     # test_resolve_notice()
-    make_train_csv()
+    # make_train_csv()
     # train_model()
     # add_all_html()
     yield
