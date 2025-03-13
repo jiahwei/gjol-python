@@ -59,6 +59,8 @@ pip install -r requirements.txt -i http://mirrors.aliyun.com/pypi/simple/ --trus
 
 ```bash
 uvicorn src.main:app --reload
+uvicorn src.main:app --host 0.0.0.0 --port 8000
+
 ```
 
 ## 服务器启动脚本

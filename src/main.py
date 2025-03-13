@@ -9,6 +9,8 @@ from src.nlp.train_model import train_model
 from src.nlp.make_data import make_train_csv
 from src.logs.service import LOGGING_CONFIG
 
+from fastapi.middleware.cors import CORSMiddleware
+
 import logging.config
 
 def setup_logging():
@@ -29,7 +31,7 @@ async def lifespan(app: FastAPI):
     # await apscheduler_start()
     # test_resolve_notice()
     # make_train_csv()
-    # train_model()
+    train_model()
     # add_all_html()
     yield
     # Clean up the ML models and release resources
@@ -38,6 +40,14 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 允许所有来源
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(bulletin_router, prefix="/bulletins", tags=["公告"])
 

@@ -5,21 +5,16 @@ from src.bulletin_list.schemas import BulletinType
 from enum import Enum
 
 
-
-class baseParagraphTopic(Enum):
+class ParagraphTopic(Enum):
     START = "开头"
     END = "署名/结尾"
     UNUPDATE = "无更新"
-
-class PlayModeParagraphTopic(Enum):
-    PVE = "PVE"
-    PVP = "PVP"
-    PVX = "PVX"
-class ParagraphTopic(Enum):
-    SKILL = "技能改动"
-    RAID = "副本"
-    STORE = "商城"
-    EVENT = "活动" 
+    STORE = "商城/外观"
+    NOMAL = "通用调整"
+    SKILL = "职业调整"
+    PVP = "斗法调整"
+    RAID = "秘境调整"
+    EVENT = "活动更新" 
 
 
 class DatePayload(BaseModel):

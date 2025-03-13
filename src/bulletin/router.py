@@ -3,6 +3,9 @@ from typing import Union, List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select, and_, desc
 
+from starlette.responses import StreamingResponse
+import time
+
 from src.bulletin.schemas import (
     DatePayload,
     BaseBulletinInfo,
@@ -16,7 +19,15 @@ from src.database import get_session
 
 
 router = APIRouter()
+def event_stream():
+    while True:
+        yield f"data: The current time is {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+        time.sleep(1)
 
+@router.get("/sse")
+async def sse_endpoint():
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
+    
 
 @router.get("/query", response_model=Bulletin)
 def query(id: Optional[int] = 1, session: Session = Depends(get_session)):
