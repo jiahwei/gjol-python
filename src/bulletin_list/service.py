@@ -2,7 +2,6 @@ import requests, time, random, re
 from datetime import date, datetime, timedelta
 from bs4 import BeautifulSoup
 from sqlmodel import Session, select, and_, desc
-from typing import List
 
 from src.database import get_session, engine
 from src.bulletin_list.models import BulletinList
@@ -30,7 +29,7 @@ def get_list_url(i: int = 0) -> str:
     return base_url
 
 
-def get_bulletin_list(url: str, first_date_str: str | None) -> List[DownloadBulletin]:
+def get_bulletin_list(url: str, first_date_str: str | None) -> list[DownloadBulletin]:
     """获取要下载的公告列表
 
     Args:
@@ -38,15 +37,17 @@ def get_bulletin_list(url: str, first_date_str: str | None) -> List[DownloadBull
         first_date_str (str | None): 数据库中最新一条公告的日期
 
     Returns:
-        List[DownloadBulletin]: 公告列表
+        list[DownloadBulletin]: 公告列表
     """
 
     res = requests.get(url, headers=header).text
     soup = BeautifulSoup(res, "lxml")
     allList = soup.find("div", class_="list_box").find_all("li")  # type: ignore
-    resList: List[DownloadBulletin] = []
+    resList: list[DownloadBulletin] = []
     if first_date_str is not None:
         firstNoticeDate = datetime.strptime(first_date_str, "%Y-%m-%d")
+    else:
+        firstNoticeDate = datetime.min  # Initialize to a default value if first_date_str is None
     for li in allList:
         infoForA = li.a
         infoForTime = li.span
@@ -66,7 +67,7 @@ def get_bulletin_list(url: str, first_date_str: str | None) -> List[DownloadBull
 
 def download_bulletin_list(
     first_date_str: str | None, pageNum: int = 1
-) -> List[DownloadBulletin]:
+) -> list[DownloadBulletin]:
     """下载公告列表
 
     Args:
@@ -74,9 +75,9 @@ def download_bulletin_list(
         pageNum (int, optional): 下载几页公告. Defaults to 1.
 
     Returns:
-        List[DownloadBulletin]: 公告列表
+        list[DownloadBulletin]: 公告列表
     """
-    bulletin_list: List[DownloadBulletin] = []
+    bulletin_list: list[DownloadBulletin] = []
     for i in range(pageNum):
         url = get_list_url(i)
         new_list = get_bulletin_list(url, first_date_str)
@@ -88,7 +89,7 @@ def download_all_list(url: str):
     res = requests.get(url, headers=header).text
     soup = BeautifulSoup(res, "lxml")
     allList = soup.find("div", class_="list_box").find_all("li")  # type: ignore
-    resList: List[DownloadBulletin] = []
+    resList: list[DownloadBulletin] = []
     for li in allList:
         infoForA = li.a
         infoForTime = li.span

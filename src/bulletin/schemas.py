@@ -1,4 +1,3 @@
-from typing import Union, List, Optional
 from pydantic import BaseModel, Field
 from datetime import date
 from src.bulletin_list.schemas import BulletinType
@@ -18,8 +17,8 @@ class ParagraphTopic(Enum):
 
 
 class DatePayload(BaseModel):
-    start_date: Optional[date] = Field(None,alias="startDate")
-    end_date: Optional[date] = Field(None,alias="endDate")
+    start_date: date | None = Field(None,alias="startDate")
+    end_date: date | None  = Field(None,alias="endDate")
 
 
 class BaseBulletinInfo(BaseModel):
@@ -34,15 +33,15 @@ class BulletinInfo(BaseBulletinInfo):
     id:int | None
     name:str | None
     order:int
-    content_total_arr:Optional[List[ContentTotal]]= Field(None,alias="contentTotalArr")
-    version_id:Optional[int| None] = Field(None,alias="versionId")
-    version_name:Optional[str] = Field(None,alias="versionName")
+    content_total_arr: list[ContentTotal] | None = Field(None,alias="contentTotalArr")
+    version_id:int| None = Field(None,alias="versionId")
+    version_name:str | None = Field(None,alias="versionName")
     type: str = Field(default=BulletinType.ROUTINE)
 
 class ListInVersionReturn(BaseModel):
     id: int | None
     acronyms: str
-    list: List[BaseBulletinInfo]
+    list: list[BaseBulletinInfo]
 
 class bulletinAllInfo(BaseModel):
     id:int

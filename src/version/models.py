@@ -1,9 +1,8 @@
 
 from sqlmodel import SQLModel, Field
-from typing import Optional
 
 class Version(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     name: str
     start_date: str
     end_date: str

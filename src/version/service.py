@@ -1,7 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
 from datetime import date, datetime, timedelta
-from typing import Union, List, Optional
 from sqlmodel import Session, select, and_, desc,or_,delete
 
 from src.database import get_session, engine
@@ -17,7 +16,7 @@ logger = logging.getLogger('spiders_test')
 def download_reslease():
     """下载版本数据"""
     base_url = "https://gjol.wangyuan.com/info/huod/version{}.shtml"
-    resList: List[Version] = []
+    resList: list[Version] = []
     for i in range(3):
         url = (
             base_url.format(i)

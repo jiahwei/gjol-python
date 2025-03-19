@@ -2,7 +2,6 @@ import os, shutil, json, datetime, requests, re, warnings, time, random, sqlite3
 from lxml import etree, html
 from bs4 import BeautifulSoup
 from functools import cmp_to_key
-from typing import Union, List, Optional
 from pydantic import BaseModel
 from datetime import date, datetime, timedelta
 
@@ -334,12 +333,12 @@ def get_notice_info(url: str, firstNoticeDate: date):
         firstNoticeDate (date): 已保存第一条公告的日期
 
     Returns:
-        List[NoticeInfo]: 公告列表中的公告信息
+        list[NoticeInfo]: 公告列表中的公告信息
     """
     res = requests.get(url, headers=header).text
     soup = BeautifulSoup(res, "lxml")
     allList = soup.find("div", class_="list_box").find_all("li")  # type: ignore
-    resList: List[NoticeInfo] = []
+    resList: list[NoticeInfo] = []
     for li in allList:
         infoForA = li.a
         infoForTime = li.span
@@ -409,11 +408,11 @@ def download_file(noticeInfo: NoticeInfo):
     return content_file_name
 
 
-def download_and_resolve_notice(noticeList: List[NoticeInfo], is_resolve: bool = True):
+def download_and_resolve_notice(noticeList: list[NoticeInfo], is_resolve: bool = True):
     """下载公告,支持调用 categorization_by_bs4 生成desc.josn文件和更新数据库
 
     Args:
-        noticeList (List[NoticeInfo]): 公告信息组成的List
+        noticeList (list[NoticeInfo]): 公告信息组成的List
         is_resolve (bool, optional): 默认生成desc.josn文件和更新数据库
     """
     for i, noticeInfo in enumerate(noticeList):
@@ -522,7 +521,7 @@ def rename_no_thursday(date_str):
 def download_reslease():
     """下载版本数据"""
     base_url = "https://gjol.wangyuan.com/info/huod/version{}.shtml"
-    resList: List[VersionInfo] = []
+    resList: list[VersionInfo] = []
     for i in range(3):
         url = (
             base_url.format(i)

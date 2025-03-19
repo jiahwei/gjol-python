@@ -1,11 +1,9 @@
-from typing import Union, List, Optional
-
 from util.type import ArchiveDesc, NoticeInfo, VersionInfo
 from util.nomal import adjust_to_nearest_thursday, rename_no_thursday
 
 
 
-pendingNoticeTest: List[NoticeInfo] = [
+pendingNoticeTest: list[NoticeInfo] = [
     NoticeInfo(
         name="《古剑奇谭网络版》4月25日更新维护公告",
         href="/z/../2024/04/24/026520.shtml",
@@ -156,7 +154,7 @@ date_is_no_turs = [
     ("2023-08-23",),
 ]
 
-version_info: List[VersionInfo] = [
+version_info: list[VersionInfo] = [
     VersionInfo(
         name="暑期资料片 ”共烛天明“", start_date="2023-06-29", end_date="", total=0,acronyms='共烛天明'
     ),
