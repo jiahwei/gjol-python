@@ -2,7 +2,6 @@
 定时执行的脚本
 """
 import json,sys
-from typing import Union, List, Optional
 from datetime import datetime
 sys.path.append(".")
 sys.path.append("./util")
@@ -33,8 +32,8 @@ def getPath(i):
     return base_url
 
 #读取新一页公告列表，筛选未处理的公告
-pendingNotice:List[NoticeInfo] = []
-# pendingNotice:List[NoticeInfo] = pendingNoticeTest
+pendingNotice:list[NoticeInfo] = []
+# pendingNotice:list[NoticeInfo] = pendingNoticeTest
 
 for i in range(4):
     if i != 0 :

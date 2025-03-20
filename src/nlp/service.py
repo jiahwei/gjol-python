@@ -1,7 +1,7 @@
 import thulac,re,logging
 from pathlib import Path
 from bs4 import BeautifulSoup, Tag
-from typing import Set, Union, List, Optional
+from typing import Set
 import joblib
 
 
@@ -63,7 +63,7 @@ def predict_paragraph_category(paragraph_text: str) -> str:
     return label[0]
 
 def nlp_test(
-    content_path: Optional[Path], bulletin_info: DownloadBulletin
+    content_path: Path | None, bulletin_info: DownloadBulletin
 ) -> Bulletin | None:
     if content_path is None:
         logger.warning("content_path is None")

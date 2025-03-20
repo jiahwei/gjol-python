@@ -40,8 +40,8 @@ Invoke-WebRequest -UseBasicParsing -Uri "https://raw.githubusercontent.com/pyenv
 
 ```bash
 # mac/linux
-pyenv virtualenv 3.10.4 gjol-server
-pyenv activate gjol-server
+pyenv virtualenv 3.11.8 gjol-server-311
+pyenv activate gjol-server-311
 # windows
 pyenv-venv install 3.10.4 gjol-server
 pyenv-venv activate gjol-server

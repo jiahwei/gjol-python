@@ -3,7 +3,6 @@ from pathlib import Path
 from datetime import date, datetime, timedelta
 from lxml import etree, html
 from bs4 import BeautifulSoup, Tag
-from typing import Union, List, Optional
 
 from src.bulletin_list.schemas import DownloadBulletin
 from src.bulletin_list.service import get_bulletin_date,get_bulletin_type
@@ -24,7 +23,7 @@ header = {
 }
 
 
-def download_notice(bulletin_info: DownloadBulletin) -> Optional[Path]:
+def download_notice(bulletin_info: DownloadBulletin) -> Path | None:
     """下载公告
 
     Args:
@@ -83,7 +82,7 @@ def download_notice(bulletin_info: DownloadBulletin) -> Optional[Path]:
 
 
 def get_base_bulletin(
-    content_path: Optional[Path], bulletin_info: DownloadBulletin
+    content_path: Path | None, bulletin_info: DownloadBulletin
 ) -> Bulletin:
     info = {
         "bulletin_date": get_bulletin_date(bulletin_info),
@@ -98,7 +97,7 @@ def get_base_bulletin(
 
 
 def resolve_notice(
-    content_path: Optional[Path], bulletin_info: DownloadBulletin
+    content_path: Path | None, bulletin_info: DownloadBulletin
 ) -> Bulletin | None:
     if content_path is None:
         logger.warning("content_path is None")
@@ -147,7 +146,7 @@ def resolve_notice(
     return resolve_bulletin
     
 def resolve_notice_by_spacy(
-    content_path: Optional[Path], bulletin_info: DownloadBulletin
+    content_path:  Path | None, bulletin_info: DownloadBulletin
 ) -> Bulletin | None:
     if content_path is None:
         logger.warning("content_path is None")
@@ -174,7 +173,7 @@ def extract_between_markers(text: str, markers: list) -> str | None:
         return None
 
 
-def extract_bulletin_contents(text: str) -> List[ContentTotal]:
+def extract_bulletin_contents(text: str) -> list[ContentTotal]:
     segments = text.split("☆")
     bulletins = []
 

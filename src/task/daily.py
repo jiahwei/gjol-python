@@ -3,7 +3,6 @@ from datetime import datetime
 from fastapi import  Depends
 from src.database import get_session,engine
 from sqlmodel import Session,select,desc
-from typing import Union, List, Optional
 
 from src.bulletin.models import Bulletin
 from src.bulletin_list.service import download_bulletin_list
