@@ -1,5 +1,4 @@
 import json
-from typing import Union, List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select, and_, desc
 
@@ -30,7 +29,7 @@ async def sse_endpoint():
     
 
 @router.get("/query", response_model=BulletinDB)
-def query(id: Optional[int] = 1, session: Session = Depends(get_session)):
+def query(id: int | None = 1, session: Session = Depends(get_session)):
     statement = select(BulletinDB).where(BulletinDB.id == id)
     result = session.exec(statement)
     first_result = result.first()
@@ -62,7 +61,7 @@ def bulletin_by_date(payload: DatePayload, session: Session = Depends(get_sessio
 @router.get("/listInVersion")
 def list_in_version(
     session: Session = Depends(get_session),
-) -> List[ListInVersionReturn]:
+) -> list[ListInVersionReturn]:
     statement = select(Version, BulletinDB).where(BulletinDB.version_id == Version.id)
     results = session.exec(statement).all()
     version_dict = {}

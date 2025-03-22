@@ -1,4 +1,3 @@
-from typing import Union, List, Optional
 from pydantic import BaseModel
 
 
@@ -26,21 +25,21 @@ class ArchiveDesc(BaseModel):
     """    
     date: str = ""
     totalLen: int = 0
-    contentTotalArr: List[Content] = []
+    contentTotalArr: list[Content] = []
     name: str = ""
     versionID:int = 0
     order:int = 0
     type:str = '1'
     authors: str = ""
-    contentArr: List[Content_Completeness] = []
+    contentArr: list[Content_Completeness] = []
     
 class PartialArchiveDesc(BaseModel):
-    name: Optional[str] = None
-    date: Optional[str] = None
-    totalLen: Optional[int] = None
-    contentArr: Optional[List[Content_Completeness]] = None
-    contentTotalArr: Optional[List[Content]] = None
-    authors: Optional[str] = None
+    name: str | None = None
+    date: str | None  = None
+    totalLen: int | None  = None
+    contentArr: list[Content_Completeness] | None = None
+    contentTotalArr: list[Content] | None = None
+    authors: str | None = None
 
 class NoticeInfo(BaseModel):
     """公告列表页面下载到的公告信息
