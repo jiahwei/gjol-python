@@ -1,5 +1,5 @@
 import logging
-import re
+import re,json
 from pathlib import Path
 from typing import Set
 
@@ -9,6 +9,7 @@ from bs4 import BeautifulSoup, Tag
 
 
 from src.bulletin.models import BulletinDB
+from src.bulletin.schemas import ContentTotal,ParagraphTopic
 from src.bulletin_list.schemas import BulletinType, DownloadBulletin
 from src.spiders.service import get_base_bulletin
 
@@ -82,11 +83,38 @@ def nlp_test(
         logger.warning("details_div为空，规则失效")
         return base_bulletin
     paragraphs = details_div.find_all("p")
+    
+    # 按类型分组段落
+    category_contents = {}  # 类型 -> 内容列表
+    category_lengths = {}   # 类型 -> 总长度
+    
     for p in paragraphs:
         p_text = p.text
         words = preprocess_text(p_text)
-        # logger.info(f"分词：{words}")
         if words.strip():
             category = predict_paragraph_category(words)
             logger.info(f"{p_text},段落类型：{category}")
+            
+            # 将段落添加到对应类型
+            if category not in category_contents:
+                category_contents[category] = []
+                category_lengths[category] = 0
+            
+            category_contents[category].append(p_text)
+            category_lengths[category] += len(p_text)
+    
+
+    content_total_arr:list[ContentTotal] = []
+    for category, contents in category_contents.items():
+        content_item = ContentTotal(
+            type=ParagraphTopic(category),
+            leng=category_lengths[category],
+            content=contents
+        )
+        content_total_arr.append(content_item)
+    
+    # 直接序列化对象，Pydantic 会自动处理枚举值
+    content_total_json = json.dumps([item.model_dump() for item in content_total_arr], ensure_ascii=False)
+    base_bulletin.content_total_arr = content_total_json
+
     return base_bulletin

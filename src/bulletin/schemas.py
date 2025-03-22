@@ -3,6 +3,15 @@ from datetime import date
 from src.bulletin_list.schemas import BulletinType
 from enum import Enum
 
+class DatePayload(BaseModel):
+    start_date: date | None = Field(None,alias="startDate")
+    end_date: date | None  = Field(None,alias="endDate")
+
+
+class BaseBulletinInfo(BaseModel):
+    date: str = ""
+    orderId:int = 0
+    totalLen:int = 0
 
 class ParagraphTopic(Enum):
     START = "开头"
@@ -14,21 +23,13 @@ class ParagraphTopic(Enum):
     PVP = "斗法调整"
     RAID = "秘境调整"
     EVENT = "活动更新" 
-
-
-class DatePayload(BaseModel):
-    start_date: date | None = Field(None,alias="startDate")
-    end_date: date | None  = Field(None,alias="endDate")
-
-
-class BaseBulletinInfo(BaseModel):
-    date: str = ""
-    orderId:int = 0
-    totalLen:int = 0
-
 class ContentTotal(BaseModel):
-    name:str
-    leng:int
+    type: ParagraphTopic
+    leng: int
+    content: list[str]
+    
+    class Config:
+        use_enum_values = True  # 使用枚举值而不是枚举对象
 class BulletinInfo(BaseBulletinInfo):
     id:int | None
     name:str | None
