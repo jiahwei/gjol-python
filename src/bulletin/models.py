@@ -4,7 +4,7 @@ from src.bulletin_list.schemas import BulletinType
 
 
 
-class Bulletin(SQLModel, table=True):
+class BulletinDB(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     bulletin_date: str
     total_leng: int

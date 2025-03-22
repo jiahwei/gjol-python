@@ -29,9 +29,9 @@ async def lifespan(app: FastAPI):
     ml_models["create_db_and_tables"] = create_db_and_tables
     # ml_models["apscheduler_start"] = apscheduler_start
     # await apscheduler_start()
-    # test_resolve_notice()
+    test_resolve_notice()
     # make_train_csv()
-    train_model()
+    # train_model()
     # add_all_html()
     yield
     # Clean up the ML models and release resources

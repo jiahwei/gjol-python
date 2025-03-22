@@ -8,7 +8,7 @@ from typing import Union, List, Optional
 from src.bulletin_list.schemas import DownloadBulletin
 from src.bulletin_list.service import get_bulletin_date,get_bulletin_type
 from src.bulletin_list.schemas import BulletinType
-from src.bulletin.models import Bulletin
+from src.bulletin.models import BulletinDB
 from src.bulletin.schemas import ContentTotal
 from src.version.service import get_version_info_by_bulletin_date
 from src.version.schemas import VersionInfo
@@ -84,7 +84,7 @@ def download_notice(bulletin_info: DownloadBulletin) -> Optional[Path]:
 
 def get_base_bulletin(
     content_path: Optional[Path], bulletin_info: DownloadBulletin
-) -> Bulletin:
+) -> BulletinDB:
     info = {
         "bulletin_date": get_bulletin_date(bulletin_info),
         "total_leng": 0,
@@ -94,12 +94,12 @@ def get_base_bulletin(
         "rank_id": 0,
         "type": get_bulletin_type(bulletin_info.name),
     }
-    return Bulletin(**info)
+    return BulletinDB(**info)
 
 
 def resolve_notice(
     content_path: Optional[Path], bulletin_info: DownloadBulletin
-) -> Bulletin | None:
+) -> BulletinDB | None:
     if content_path is None:
         logger.warning("content_path is None")
         return None
@@ -120,7 +120,7 @@ def resolve_notice(
     if no_update:
         # 无更新
         base_bulletin.total_leng = len(target_text)
-        resolve_bulletin = Bulletin(**base_bulletin.model_dump())
+        resolve_bulletin = BulletinDB(**base_bulletin.model_dump())
         return resolve_bulletin
     # 有更新内容
     logger.info("有更新内容")
@@ -143,21 +143,21 @@ def resolve_notice(
         return None
     base_bulletin.version_id = version_info.version_id
     base_bulletin.rank_id = version_info.rank
-    resolve_bulletin = Bulletin(**base_bulletin.model_dump())
+    resolve_bulletin = BulletinDB(**base_bulletin.model_dump())
     return resolve_bulletin
     
 def resolve_notice_by_spacy(
     content_path: Optional[Path], bulletin_info: DownloadBulletin
-) -> Bulletin | None:
+) -> BulletinDB | None:
     if content_path is None:
         logger.warning("content_path is None")
         return None
-    base_bulletin:Bulletin = get_base_bulletin(content_path, bulletin_info)
+    base_bulletin:BulletinDB = get_base_bulletin(content_path, bulletin_info)
     content = content_path.read_text(encoding="utf-8")
     soup = BeautifulSoup(content, "html5lib")
     
     content_text = soup.get_text()
-    resolve_bulletin = Bulletin(**base_bulletin.model_dump())
+    resolve_bulletin = BulletinDB(**base_bulletin.model_dump())
     return resolve_bulletin        
 
 

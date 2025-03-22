@@ -6,7 +6,7 @@ import joblib
 
 
 from src.bulletin_list.schemas import BulletinType
-from src.bulletin.models import Bulletin
+from src.bulletin.models import BulletinDB
 from src.bulletin_list.schemas import DownloadBulletin
 from src.spiders.service import get_base_bulletin
 from constants import DEFAULT_SQLITE_PATH, BASEURL, DEFAULT_FLODER_PATH_ABSOLUTE
@@ -64,7 +64,7 @@ def predict_paragraph_category(paragraph_text: str) -> str:
 
 def nlp_test(
     content_path: Optional[Path], bulletin_info: DownloadBulletin
-) -> Bulletin | None:
+) -> BulletinDB | None:
     if content_path is None:
         logger.warning("content_path is None")
         return None

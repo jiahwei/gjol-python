@@ -5,7 +5,7 @@ from src.database import get_session,engine
 from sqlmodel import Session,select,desc
 from typing import Union, List, Optional
 
-from src.bulletin.models import Bulletin
+from src.bulletin.models import BulletinDB
 from src.bulletin_list.service import download_bulletin_list
 from src.spiders.service import download_notice,resolve_notice
 from src.bulletin_list.schemas import DownloadBulletin
@@ -34,7 +34,7 @@ def get_new_date() -> str | None:
     """查询数据库中最新一条公告的日期
     """    
     with Session(engine) as session:
-        statement = select(Bulletin.bulletin_date).order_by(desc(Bulletin.bulletin_date)).limit(1)
+        statement = select(BulletinDB.bulletin_date).order_by(desc(BulletinDB.bulletin_date)).limit(1)
         result = session.exec(statement)
         first_result = result.first()
         return first_result

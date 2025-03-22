@@ -12,7 +12,7 @@ from src.bulletin.schemas import (
     BulletinInfo,
     ListInVersionReturn,
 )
-from src.bulletin.models import Bulletin
+from src.bulletin.models import BulletinDB
 from src.version.models import Version
 from src.models import ArchiveDesc
 from src.database import get_session
@@ -29,9 +29,9 @@ async def sse_endpoint():
     return StreamingResponse(event_stream(), media_type="text/event-stream")
     
 
-@router.get("/query", response_model=Bulletin)
+@router.get("/query", response_model=BulletinDB)
 def query(id: Optional[int] = 1, session: Session = Depends(get_session)):
-    statement = select(Bulletin).where(Bulletin.id == id)
+    statement = select(BulletinDB).where(BulletinDB.id == id)
     result = session.exec(statement)
     first_result = result.first()
     response = {}
@@ -43,12 +43,12 @@ def query(id: Optional[int] = 1, session: Session = Depends(get_session)):
 
 @router.post("/byDate")
 def bulletin_by_date(payload: DatePayload, session: Session = Depends(get_session)):
-    statement = select(Bulletin)
+    statement = select(BulletinDB)
     if payload.start_date and payload.end_date:
         statement = statement.where(
             and_(
-                Bulletin.bulletin_date >= payload.start_date.__str__(),
-                Bulletin.bulletin_date <= payload.end_date.__str__(),
+                BulletinDB.bulletin_date >= payload.start_date.__str__(),
+                BulletinDB.bulletin_date <= payload.end_date.__str__(),
             )
         )
         results = session.exec(statement).all()
@@ -63,7 +63,7 @@ def bulletin_by_date(payload: DatePayload, session: Session = Depends(get_sessio
 def list_in_version(
     session: Session = Depends(get_session),
 ) -> List[ListInVersionReturn]:
-    statement = select(Version, Bulletin).where(Bulletin.version_id == Version.id)
+    statement = select(Version, BulletinDB).where(BulletinDB.version_id == Version.id)
     results = session.exec(statement).all()
     version_dict = {}
     for version, bulletin in results:
@@ -81,9 +81,9 @@ def list_in_version(
 @router.get("/new")
 def new_bulletin(session: Session = Depends(get_session)) -> BulletinInfo:
     statement_new_bulletin = (
-        select(Bulletin,Version)
-        .where(Bulletin.version_id == Version.id)
-        .order_by(desc(Bulletin.bulletin_date)).limit(1)
+        select(BulletinDB,Version)
+        .where(BulletinDB.version_id == Version.id)
+        .order_by(desc(BulletinDB.bulletin_date)).limit(1)
     )
     result = session.exec(statement_new_bulletin).first()
     if result is None:
@@ -91,9 +91,9 @@ def new_bulletin(session: Session = Depends(get_session)) -> BulletinInfo:
     bulletin_info, version_info = result
         
     statement_bulletin = (
-        select(Bulletin)
-        .where(Bulletin.version_id == bulletin_info.version_id)
-        .order_by(desc(Bulletin.total_leng))
+        select(BulletinDB)
+        .where(BulletinDB.version_id == bulletin_info.version_id)
+        .order_by(desc(BulletinDB.total_leng))
     )
     bulletin_list_by_version_id = session.exec(statement_bulletin).all()
     # 查找当前公告在列表中的位置

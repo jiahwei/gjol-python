@@ -9,7 +9,7 @@
 prowershell安装[pyenv](https://pyenv-win.github.io/pyenv-win/#introduction)和[pyenv-win-venv](https://github.com/pyenv-win/pyenv-win-venv)
 
 ```prowershell
-pyenv virtualenv 3.10.4 gjol-server
+pyenv virtualenv 3.11.8 gjol-server-311
 Invoke-WebRequest -UseBasicParsing -Uri "https://raw.githubusercontent.com/pyenv-win/pyenv-win/master/pyenv-win/install-pyenv-win.ps1" -OutFile "./install-pyenv-win.ps1"; &"./install-pyenv-win.ps1"
 # 重启prowershell
 # 重新打开 PowerShell
@@ -32,7 +32,7 @@ Invoke-WebRequest -UseBasicParsing -Uri "https://raw.githubusercontent.com/pyenv
 
 ### MAC
 
-新建一个虚拟环境 `gjol-server`或者其他什么名字
+新建一个虚拟环境 `gjol-server-311`或者其他什么名字
 
 使用 homebrew安装
 
@@ -40,11 +40,11 @@ Invoke-WebRequest -UseBasicParsing -Uri "https://raw.githubusercontent.com/pyenv
 
 ```bash
 # mac/linux
-pyenv virtualenv 3.10.4 gjol-server
-pyenv activate gjol-server
+pyenv virtualenv 3.11.8 gjol-server-311
+pyenv activate gjol-server-311
 # windows
-pyenv-venv install 3.10.4 gjol-server
-pyenv-venv activate gjol-server
+pyenv-venv install 3.11.8 gjol-server-311
+pyenv-venv activate gjol-server-311
 ```
 
 ## 下载依赖

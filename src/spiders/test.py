@@ -1,4 +1,5 @@
 import time,os,shutil,re
+import logging
 from datetime import date, datetime, timedelta
 from sqlmodel import Session, select, and_, desc,update
 from src.database import get_session, engine
@@ -13,7 +14,8 @@ from src.spiders.service import download_notice,resolve_notice,resolve_notice_by
 from src.nlp.service import nlp_test
 
 from pathlib import Path
-import logging
+
+logger = logging.getLogger('nlp_test')
 
 
 def test_resolve_notice(test_dade = None):
@@ -29,13 +31,13 @@ def test_resolve_notice(test_dade = None):
                 # bulletin =  resolve_notice(content_url, bulletin_info)
                 # bulletin =  resolve_notice_by_spacy(content_url, bulletin_info)
                 if bulletin is None:
-                    logging.warning(f"get bulletin None:{bulletin_info.name}") 
+                    logger.warning(f"get bulletin None:{bulletin_info.name}") 
                     continue
                 else:
-                    logging.info(f"get bulletin:{bulletin_info.name},{bulletin_info.date}")
-                    logging.info(bulletin.model_dump_json())
+                    logger.info(f"get bulletin:{bulletin_info.name},{bulletin_info.date}")
+                    logger.info(bulletin.model_dump_json())
             else:
-                logging.debug("No bulletin_info found for the given date") 
+                logger.debug("No bulletin_info found for the given date") 
 
 
 def bulletin_type():
@@ -44,7 +46,7 @@ def bulletin_type():
         buletin_list = session.exec(statement).all()
         for res in buletin_list:
             bulletin_info = DownloadBulletin(name=res.name, href=res.href, date=res.date)
-            logging.info(bulletin_info)
+            logger.info(bulletin_info)
 
 
 recycle_bin_path = Path(DEFAULT_FLODER_PATH_ABSOLUTE).joinpath('recycleBin')
@@ -60,18 +62,18 @@ def resolve_file():
             if isinstance(title_tag, Tag):
                 type = get_bulletin_type(title_tag.text)
                 if type in {BulletinType.ROUTINE} :
-                    logging.info(f'{title_tag.text},{root}')
+                    logger.info(f'{title_tag.text},{root}')
                 else:
-                    logging.info(f'{title_tag.text},type:{type.value}')
+                    logger.info(f'{title_tag.text},type:{type.value}')
                     # dst_path = recycle_bin_path.joinpath(type.value)
-                    # logging.info(Path(root))
-                    # logging.info(dst_path)
+                    # logger.info(Path(root))
+                    # logger.info(dst_path)
                     # shutil.move(Path(root), dst_path)
             else:
-                logging.error(f"roots,{root}, error")
-            # logging.info(f"roots,{root}")
-            # logging.info(f"dirs,{dirs}")
-            # logging.info(f"files,{files}")
+                logger.error(f"roots,{root}, error")
+            # logger.info(f"roots,{root}")
+            # logger.info(f"dirs,{dirs}")
+            # logger.info(f"files,{files}")
 
 
 def rename_file(type='routine'):
@@ -89,14 +91,14 @@ def rename_file(type='routine'):
                 date_pattern_root = r'\d{4}-\d{2}-\d{2}'
                 match = re.search(date_pattern_root, root.__str__())
                 if match is None:
-                    logging.info(f'root{date_pattern_root},{root}')
+                    logger.info(f'root{date_pattern_root},{root}')
                     return
                 root_date = match.group()
                 date_obj = datetime.strptime(root_date, '%Y-%m-%d')
                 new_date_obj =date_obj.replace(month=int(dates[0][0]), day=int(dates[0][1]))
                 new_date = new_date_obj.strftime('%Y-%m-%d')
                 if root_date != new_date:
-                    logging.info(f'old - {root_date},new - {new_date}')
+                    logger.info(f'old - {root_date},new - {new_date}')
                     # new_root = Path(root).with_name(new_date) 
                     # root_path = Path(root) 
                     # root_path.rename(new_root)
