@@ -35,7 +35,7 @@ def test_resolve_notice(test_dade = None):
                     continue
                 else:
                     logger.info(f"get bulletin:{bulletin_info.name},{bulletin_info.date}")
-                    logger.info(bulletin.model_dump_json())
+                    # logger.info(bulletin.model_dump_json())
             else:
                 logger.debug("No bulletin_info found for the given date") 
 

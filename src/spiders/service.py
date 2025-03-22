@@ -1,7 +1,6 @@
 import os, shutil, json, requests, re, warnings, time, random, sqlite3, sys
 from pathlib import Path
 from datetime import date, datetime, timedelta
-from lxml import etree, html
 from bs4 import BeautifulSoup, Tag
 from typing import Union, List, Optional
 
