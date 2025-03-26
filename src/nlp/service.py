@@ -113,7 +113,7 @@ def nlp_test(
         )
         content_total_arr.append(content_item)
     
-    # 直接序列化对象，Pydantic 会自动处理枚举值
+    
     content_total_json = json.dumps([item.model_dump() for item in content_total_arr], ensure_ascii=False)
     base_bulletin.content_total_arr = content_total_json
 

@@ -4,18 +4,17 @@ from datetime import date, datetime, timedelta
 from bs4 import BeautifulSoup, Tag
 
 from src.bulletin_list.schemas import DownloadBulletin
-from src.bulletin_list.service import get_bulletin_date,get_bulletin_type
+from src.bulletin_list.service import get_bulletin_date, get_bulletin_type
 from src.bulletin_list.schemas import BulletinType
 from src.bulletin.models import BulletinDB
-from src.bulletin.schemas import ContentTotal
-from src.version.service import get_version_info_by_bulletin_date
-from src.version.schemas import VersionInfo
-
+from src.bulletin.schemas import ContentTotal,ParagraphTopic
+from src.nlp.service import preprocess_text, predict_paragraph_category
 
 from constants import DEFAULT_SQLITE_PATH, BASEURL, DEFAULT_FLODER_PATH_ABSOLUTE
 
 import logging
-logger = logging.getLogger('spiders_test')
+
+logger = logging.getLogger("spiders_test")
 
 header = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36 Edg/117.0.2045.31"
@@ -59,7 +58,7 @@ def download_notice(bulletin_info: DownloadBulletin) -> Path | None:
     soup = BeautifulSoup(res, "lxml")
 
     source_file_name = parent_path.joinpath("source.html")
-    source_file_name.write_text(str(soup),encoding='utf-8')
+    source_file_name.write_text(str(soup), encoding="utf-8")
 
     # 过滤不需要的标签,生成content.html
     for excludedDivName in ["more_button", "bdsharebuttonbox"]:
@@ -71,7 +70,7 @@ def download_notice(bulletin_info: DownloadBulletin) -> Path | None:
         tag.extract()
     details = soup.find("div", class_="details")
     content_file_name = parent_path.joinpath("content.html")
-    content_file_name.write_text(str(details),encoding='utf-8')
+    content_file_name.write_text(str(details), encoding="utf-8")
 
     logger.info(f"{time.ctime()}:{bulletin_info.name}下载完成,等待{sleeptime}秒")
     print(f"{time.ctime()}:{bulletin_info.name}下载完成,等待{sleeptime}秒")
@@ -98,6 +97,15 @@ def get_base_bulletin(
 def resolve_notice(
     content_path: Path | None, bulletin_info: DownloadBulletin
 ) -> BulletinDB | None:
+    """解析公告
+
+    Args:
+        content_path (Path | None): 公告content.html的路径
+        bulletin_info (DownloadBulletin): 公告信息
+
+    Returns:
+        BulletinDB | None: 解析后的公告
+    """    
     if content_path is None:
         logger.warning("content_path is None")
         return None
@@ -109,82 +117,40 @@ def resolve_notice(
         logger.warning("details_div为空，规则失效")
         return base_bulletin
     paragraphs = details_div.find_all("p")
-    target_text = "本次例行停机维护，无更新内容！"
-    no_update: bool = False
+    # 按类型分组段落
+    category_contents = {}  # 类型 -> 内容列表
+    category_lengths = {}   # 类型 -> 总长度
+    
     for p in paragraphs:
-        if target_text in p.text:
-            no_update = True
-            break
-    if no_update:
-        # 无更新
-        base_bulletin.total_leng = len(target_text)
-        resolve_bulletin = BulletinDB(**base_bulletin.model_dump())
-        return resolve_bulletin
-    # 有更新内容
-    logger.info("有更新内容")
-    all_details_text = details_div.get_text()
-    markers = ["本次维护更新内容如下：", "维护期间给您带来的不便，敬请谅解！"]
-    extracted_content = extract_between_markers(all_details_text, markers)
-    if extracted_content is None:
-        logger.error(f"{bulletin_info.name}，resolve_notice失败")
-        return None
-    # logger.info("extracted_content")
-    # logger.info(extracted_content)
-    content_total_arr = extract_bulletin_contents(extracted_content)
-    # logger.info("content_total_arr")
-    # logger.info(content_total_arr)
-    base_bulletin.total_leng = len(extracted_content)
-    base_bulletin.content_total_arr = json.dumps(content_total_arr)
-    version_info = get_version_info_by_bulletin_date(base_bulletin.bulletin_date,base_bulletin.total_leng)
-    if version_info is None:
-        logger.error(f"{bulletin_info.name}，version_info失败")
-        return None
-    base_bulletin.version_id = version_info.version_id
-    base_bulletin.rank_id = version_info.rank
-    resolve_bulletin = BulletinDB(**base_bulletin.model_dump())
-    return resolve_bulletin
+        p_text = p.text
+        words = preprocess_text(p_text)
+        if words.strip():
+            category = predict_paragraph_category(words)
+            logger.info(f"{p_text},段落类型：{category}")
+            
+            # 将段落添加到对应类型
+            if category not in category_contents:
+                category_contents[category] = []
+                category_lengths[category] = 0
+            
+            category_contents[category].append(p_text)
+            category_lengths[category] += len(p_text)
     
-def resolve_notice_by_spacy(
-    content_path:  Path | None, bulletin_info: DownloadBulletin
-) -> BulletinDB | None:
-    if content_path is None:
-        logger.warning("content_path is None")
-        return None
-    base_bulletin:BulletinDB = get_base_bulletin(content_path, bulletin_info)
-    content = content_path.read_text(encoding="utf-8")
-    soup = BeautifulSoup(content, "html5lib")
+
+    content_total_arr:list[ContentTotal] = []
+    for category, contents in category_contents.items():
+        content_item = ContentTotal(
+            type=ParagraphTopic(category),
+            leng=category_lengths[category],
+            content=contents
+        )
+        content_total_arr.append(content_item)
     
-    content_text = soup.get_text()
-    resolve_bulletin = BulletinDB(**base_bulletin.model_dump())
-    return resolve_bulletin        
+    
+    content_total_json = json.dumps([item.model_dump() for item in content_total_arr], ensure_ascii=False)
+    base_bulletin.content_total_arr = content_total_json
 
-
-def extract_between_markers(text: str, markers: list) -> str | None:
-    start_marker, end_marker = markers
-    start_index = text.find(start_marker)
-    end_index = text.find(end_marker, start_index)
-
-    if start_index != -1 and end_index != -1:
-        start_index += len(start_marker)
-        return text[start_index:end_index].strip()
-    else:
-        logger.error("extract_between_markers:切割失败")
-        return None
-
-
-def extract_bulletin_contents(text: str) -> list[ContentTotal]:
-    segments = text.split("☆")
-    bulletins = []
-
-    for segment in segments:
-        lines = segment.strip().split("\n")
-        if len(lines) > 1:
-            name = lines[0].strip()
-            content = "\n".join(line.strip() for line in lines[1:])
-            content_leng = len(content)
-            bulletin = ContentTotal(name=name, leng=content_leng)
-            bulletins.append(bulletin.model_dump())
-    return bulletins
+    return base_bulletin    
 
 
 def check_bulletin_download(folder_date: str, bulletin_type: BulletinType) -> bool:
@@ -204,5 +170,5 @@ def check_bulletin_download(folder_date: str, bulletin_type: BulletinType) -> bo
         source_file = bulletin_path.joinpath("source.html")
         content_file = bulletin_path.joinpath("content.html")
         return source_file.exists() and content_file.exists()
-    
+
     return False
