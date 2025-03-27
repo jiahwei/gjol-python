@@ -11,7 +11,7 @@ from bs4 import BeautifulSoup, Tag
 from src.bulletin.models import BulletinDB
 from src.bulletin.schemas import ContentTotal,ParagraphTopic
 from src.bulletin_list.schemas import BulletinType, DownloadBulletin
-from src.spiders.service import get_base_bulletin
+# from src.spiders.service import get_base_bulletin
 
 logger = logging.getLogger("nlp_test")
 thu1 = thulac.thulac(user_dict=Path("src/nlp/user_dict.txt"), filt=False, seg_only=True)
@@ -75,7 +75,7 @@ def nlp_test(
     logger.info(
         f"处理{content_path}",
     )
-    base_bulletin = get_base_bulletin(content_path, bulletin_info)
+    # base_bulletin = get_base_bulletin(content_path, bulletin_info)
     content = content_path.read_text(encoding="utf-8")
     soup = BeautifulSoup(content, "html5lib")
     details_div = soup.find("div", class_="details")

@@ -21,3 +21,29 @@ def fix_bulletin_ranks(version_id: int):
             session.add(bulletin)
 
         session.commit()
+
+
+def update_bulletin(bulletin_info: BulletinDB) -> BulletinDB | None:
+    with Session(engine) as session:
+        if bulletin_info.id is None:
+            session.add(bulletin_info)
+            session.commit()
+            session.refresh(bulletin_info)
+            return bulletin_info
+        else:
+            # 更新公告信息
+            statement = select(BulletinDB).where(BulletinDB.id == bulletin_info.id)
+            bulletin = session.exec(statement).first()
+            if bulletin:
+                # 更新字段
+                bulletin.content_total_arr = bulletin_info.content_total_arr
+                
+                session.add(bulletin)
+                session.commit()
+                session.refresh(bulletin)
+                
+                if bulletin.version_id:
+                    fix_bulletin_ranks(bulletin.version_id)
+                
+                return bulletin
+            return None

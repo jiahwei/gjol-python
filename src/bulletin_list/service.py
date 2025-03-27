@@ -143,7 +143,7 @@ def get_bulletin_type(bulletin_name: str) -> BulletinType:
         bulletin_name (str): 公告名称
 
     Returns:
-        BulletinType | None: 公告类型或 None
+        BulletinType | None: 公告类型
     """
     if ("职业" in bulletin_name or "技能" in bulletin_name) and '《古剑奇谭网络版》' in bulletin_name:
         return BulletinType.SKILL

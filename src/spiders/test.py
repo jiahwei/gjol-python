@@ -11,31 +11,31 @@ from src.bulletin_list.models import BulletinList
 from src.bulletin_list.schemas import DownloadBulletin,BulletinType
 from src.bulletin_list.service import get_bulletin_date,get_bulletin_type,get_really_bulletin_date
 from src.spiders.service import download_notice,resolve_notice
-from src.nlp.service import nlp_test
+from src.bulletin.service import update_bulletin
 
 from pathlib import Path
 
 logger = logging.getLogger('nlp_test')
 
 
+
 def test_resolve_notice(test_dade = None):
     with Session(engine) as session:
         statement = select(BulletinList) if test_dade is None else select(BulletinList) .where(BulletinList.date == test_dade)
         buletin_list = session.exec(statement).all()
-        for res in buletin_list[203:210]:
+        for res in buletin_list:
             if res is not None:
                 new_date = get_really_bulletin_date(res)
                 bulletin_info = DownloadBulletin(name=res.name, href=res.href, date=new_date)
                 content_url = download_notice(bulletin_info)
-                bulletin =  nlp_test(content_url, bulletin_info)
-                # bulletin =  resolve_notice(content_url, bulletin_info)
-                # bulletin =  resolve_notice_by_spacy(content_url, bulletin_info)
+                bulletin =  resolve_notice(content_url, bulletin_info)
                 if bulletin is None:
                     logger.warning(f"get bulletin None:{bulletin_info.name}") 
                     continue
                 else:
-                    logger.info(f"get bulletin:{bulletin_info.name},{bulletin_info.date}")
-                    logger.info(bulletin)
+                    # logger.info(f"get bulletin:{bulletin_info.name},{bulletin_info.date}")
+                    # logger.info(bulletin)
+                    update_bulletin(bulletin)
             else:
                 logger.debug("No bulletin_info found for the given date") 
 

@@ -9,7 +9,7 @@ from src.database import get_session, engine
 from src.bulletin_list.models import BulletinList
 from src.bulletin_list.schemas import DownloadBulletin,BulletinType
 from src.bulletin_list.service import get_bulletin_date,get_bulletin_type,get_really_bulletin_date
-from src.spiders.service import download_notice,resolve_notice,resolve_notice_by_spacy
+from src.spiders.service import download_notice,resolve_notice
 from src.nlp.service import predict_paragraph_category,preprocess_text
 
 

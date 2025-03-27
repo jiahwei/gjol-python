@@ -89,7 +89,7 @@ def get_base_bulletin(
         "bulletin_name": bulletin_info.name,
         "version_id": None,
         "rank_id": 0,
-        "type": get_bulletin_type(bulletin_info.name),
+        "type": get_bulletin_type(bulletin_info.name).value,
     }
     return BulletinDB(**info)
 
