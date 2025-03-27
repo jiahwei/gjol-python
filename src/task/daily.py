@@ -1,8 +1,5 @@
 """ 定时任务执行的脚本
-- 每天定时执行的任务：
-    - 爬取最新的公告列表
-    - 爬取公告详情
-    - 解析公告详情
+该脚本定义了一个定时任务执行的函数 `periodic_function`，并使用 `BackgroundScheduler` 类创建了一个定时任务调度器 `scheduler`。
 """
 
 from datetime import datetime

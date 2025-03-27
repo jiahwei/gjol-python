@@ -1,4 +1,5 @@
 """版本相关的方法
+该模块提供了一些与版本相关的方法，包括下载版本数据、根据公告日期和长度获取版本信息以及对数据库中的版本进行排序等功能。
 """
 
 import logging
@@ -34,7 +35,7 @@ def download_reslease():
             if i != 0
             else "https://gjol.wangyuan.com/info/huod/version.shtml"
         )
-        res = requests.get(url, headers=HEADER).text
+        res = requests.get(url, headers=HEADER, timeout=30).text
         soup = BeautifulSoup(res, "lxml")
         all_list = soup.find("div", class_="group_list").find_all("li")  # type: ignore
         for li in all_list:
