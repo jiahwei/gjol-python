@@ -1,11 +1,15 @@
-import requests, time, random, re
+import random
+import re
+import time
 from datetime import date, datetime, timedelta
-from bs4 import BeautifulSoup
-from sqlmodel import Session, select, and_, desc
 
-from src.database import get_session, engine
+import requests
+from bs4 import BeautifulSoup
+from sqlmodel import Session, and_, desc, select
+
 from src.bulletin_list.models import BulletinList
-from src.bulletin_list.schemas import DownloadBulletin,BulletinType
+from src.bulletin_list.schemas import BulletinType, DownloadBulletin
+from src.database import engine, get_session
 
 header = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36 Edg/117.0.2045.31"

@@ -1,7 +1,5 @@
-from util.type import ArchiveDesc, NoticeInfo, VersionInfo
 from util.nomal import adjust_to_nearest_thursday, rename_no_thursday
-
-
+from util.type import ArchiveDesc, NoticeInfo, VersionInfo
 
 pendingNoticeTest: list[NoticeInfo] = [
     NoticeInfo(

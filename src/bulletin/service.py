@@ -1,10 +1,10 @@
+from sqlmodel import Session, desc, select
 from sqlmodel.sql._expression_select_cls import SelectOfScalar
-from sqlmodel import Session, select, desc
 
-from src.database import engine
 from src.bulletin.models import BulletinDB
 from src.bulletin_list.schemas import DownloadBulletin
 from src.bulletin_list.service import get_bulletin_date, get_bulletin_type
+from src.database import engine
 from src.version.models import Version
 from src.version.schemas import VersionInfo
 

@@ -1,7 +1,10 @@
-from pydantic import BaseModel, Field
 from datetime import date
-from src.bulletin_list.schemas import BulletinType
 from enum import Enum
+
+from pydantic import BaseModel, Field
+
+from src.bulletin_list.schemas import BulletinType
+
 
 class DatePayload(BaseModel):
     start_date: date | None = Field(None,alias="startDate")

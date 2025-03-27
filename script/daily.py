@@ -1,14 +1,16 @@
 """
 定时执行的脚本
 """
-import json,sys
+import json
+import sys
 from datetime import datetime
+
 sys.path.append(".")
 sys.path.append("./util")
-from util.nomal import get_first_archives,get_notice_info,download_and_resolve_notice
+from util.nomal import (download_and_resolve_notice, get_first_archives,
+                        get_notice_info)
 from util.sqlite import get_new_date
-from util.type import ArchiveDesc,NoticeInfo
-
+from util.type import ArchiveDesc, NoticeInfo
 
 # 读取存档里已保存的第一条公告
 # try:

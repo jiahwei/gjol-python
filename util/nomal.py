@@ -1,15 +1,27 @@
-import os, shutil, json, datetime, requests, re, warnings, time, random, sqlite3,sys
-from lxml import etree, html
-from bs4 import BeautifulSoup
-from functools import cmp_to_key
-from pydantic import BaseModel
-from datetime import date, datetime, timedelta
-
-from util.type import ArchiveDesc, NoticeInfo, Content_Completeness, Content, VersionInfo
-from util.sqlite import insert_archive_desc
-from constants import DEFAULT_SQLITE_PATH,BASEURL,DEFAULT_FLODER_PATH
-
+import datetime
+import json
 import logging
+import os
+import random
+import re
+import shutil
+import sqlite3
+import sys
+import time
+import warnings
+from datetime import date, datetime, timedelta
+from functools import cmp_to_key
+
+import requests
+from bs4 import BeautifulSoup
+from lxml import etree, html
+from pydantic import BaseModel
+
+from constants import BASEURL, DEFAULT_FLODER_PATH, DEFAULT_SQLITE_PATH
+from util.sqlite import insert_archive_desc
+from util.type import (ArchiveDesc, Content, Content_Completeness, NoticeInfo,
+                       VersionInfo)
+
 logger = logging.getLogger('spiders_test')
 
 

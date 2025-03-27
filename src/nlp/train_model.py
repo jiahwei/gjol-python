@@ -1,18 +1,22 @@
-import pandas as pd
+import csv
+import json
+import logging
+import os
+from collections import Counter
+from pathlib import Path
+
+import joblib
 import numpy as np
-import logging,json,csv,os
-
-
+import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import train_test_split
-from sklearn.naive_bayes import MultinomialNB
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report
-import joblib
-from pathlib import Path
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.preprocessing import LabelEncoder
+
 from src.nlp.service import preprocess_text
-from collections import Counter
+
 
 def get_merge_csv_data():
     base_csv = pd.read_csv('data/paragraphs.csv')

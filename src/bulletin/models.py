@@ -1,5 +1,7 @@
-from sqlmodel import SQLModel, Field
+from sqlmodel import Field, SQLModel
+
 from src.bulletin_list.schemas import BulletinType
+
 
 class BulletinDB(SQLModel, table=True):
     __tablename__:str = "bulletin"

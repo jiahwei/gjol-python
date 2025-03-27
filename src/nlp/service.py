@@ -1,5 +1,6 @@
+import json
 import logging
-import re,json
+import re
 from pathlib import Path
 from typing import Set
 
@@ -7,10 +8,10 @@ import joblib
 import thulac
 from bs4 import BeautifulSoup, Tag
 
-
 from src.bulletin.models import BulletinDB
-from src.bulletin.schemas import ContentTotal,ParagraphTopic
+from src.bulletin.schemas import ContentTotal, ParagraphTopic
 from src.bulletin_list.schemas import BulletinType, DownloadBulletin
+
 # from src.spiders.service import get_base_bulletin
 
 logger = logging.getLogger("nlp_test")

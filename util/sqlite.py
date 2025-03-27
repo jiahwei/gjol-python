@@ -1,9 +1,10 @@
-import os, json, sqlite3,sys
+import json
+import os
+import sqlite3
+import sys
 
 from constants import DEFAULT_SQLITE_PATH
 from util.type import ArchiveDesc
-
-
 
 
 def get_new_date(sqlitePath: str = DEFAULT_SQLITE_PATH) -> ArchiveDesc:

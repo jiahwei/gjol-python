@@ -1,5 +1,7 @@
-from pydantic import BaseModel
 from enum import Enum
+
+from pydantic import BaseModel
+
 
 class DownloadBulletin(BaseModel):
     """公告列表页面下载到的公告信息

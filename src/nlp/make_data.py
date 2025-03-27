@@ -1,17 +1,20 @@
-from bs4 import BeautifulSoup, Tag
-from sqlmodel import Session, select, and_, desc,update
-from datetime import datetime
-import pandas as pd
-import logging,json,csv
+import csv
+import json
+import logging
 import os
+from datetime import datetime
 
-from src.database import get_session, engine
+import pandas as pd
+from bs4 import BeautifulSoup, Tag
+from sqlmodel import Session, and_, desc, select, update
+
 from src.bulletin_list.models import BulletinList
-from src.bulletin_list.schemas import DownloadBulletin,BulletinType
-from src.bulletin_list.service import get_bulletin_date,get_bulletin_type,get_really_bulletin_date
-from src.spiders.service import download_notice,resolve_notice
-from src.nlp.service import predict_paragraph_category,preprocess_text
-
+from src.bulletin_list.schemas import BulletinType, DownloadBulletin
+from src.bulletin_list.service import (get_bulletin_date, get_bulletin_type,
+                                       get_really_bulletin_date)
+from src.database import engine, get_session
+from src.nlp.service import predict_paragraph_category, preprocess_text
+from src.spiders.service import download_notice, resolve_notice
 
 logger = logging.getLogger('nlp_test')
 

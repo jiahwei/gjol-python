@@ -1,17 +1,17 @@
+import logging.config
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 # from src.task.daily import scheduler,apscheduler_start
 from src.bulletin.router import router as bulletin_router
 from src.database import create_db_and_tables
-from src.spiders.test import test_resolve_notice
-from src.nlp.train_model import train_model
-from src.nlp.make_data import make_train_csv
 from src.logs.service import LOGGING_CONFIG
+from src.nlp.make_data import make_train_csv
+from src.nlp.train_model import train_model
+from src.spiders.test import test_resolve_notice
 
-from fastapi.middleware.cors import CORSMiddleware
-
-import logging.config
 
 def setup_logging():
     try:

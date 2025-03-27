@@ -1,16 +1,16 @@
+import logging
+from datetime import date, datetime, timedelta
+
 import requests
 from bs4 import BeautifulSoup
-from datetime import date, datetime, timedelta
-from sqlmodel import Session, select, and_, desc,or_,delete
+from sqlmodel import Session, and_, delete, desc, or_, select
 
-from src.database import get_session, engine
+from constants import HEADER
 from src.bulletin.models import BulletinDB
+from src.database import engine, get_session
 from src.version.models import Version
 from src.version.schemas import VersionInfo
-from constants import HEADER
 
-
-import logging
 logger = logging.getLogger('spiders_test')
 
 def download_reslease():

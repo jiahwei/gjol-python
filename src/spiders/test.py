@@ -1,29 +1,25 @@
+import logging
+import os
+import re
+import shutil
+import time
+from datetime import date, datetime, timedelta
+from pathlib import Path
 from typing import Sequence
 
-
-from src.bulletin.models import BulletinDB
-
-
-import time, os, shutil, re
-import logging
-from datetime import date, datetime, timedelta
-from sqlmodel import Session, select, and_, desc, update
-from src.database import get_session, engine
-from pathlib import Path
 from bs4 import BeautifulSoup, Tag
+from sqlmodel import Session, and_, desc, select, update
 
-from constants import DEFAULT_FLODER_PATH_ABSOLUTE, BASEURL, DEFAULT_FLODER_PATH
-from src.bulletin_list.models import BulletinList
-from src.bulletin_list.schemas import DownloadBulletin, BulletinType
-from src.bulletin_list.service import (
-    get_bulletin_date,
-    get_bulletin_type,
-    get_really_bulletin_date,
-)
-from src.spiders.service import download_notice, resolve_notice
+from constants import (BASEURL, DEFAULT_FLODER_PATH,
+                       DEFAULT_FLODER_PATH_ABSOLUTE)
+from src.bulletin.models import BulletinDB
 from src.bulletin.service import update_bulletin
-
-from pathlib import Path
+from src.bulletin_list.models import BulletinList
+from src.bulletin_list.schemas import BulletinType, DownloadBulletin
+from src.bulletin_list.service import (get_bulletin_date, get_bulletin_type,
+                                       get_really_bulletin_date)
+from src.database import engine, get_session
+from src.spiders.service import download_notice, resolve_notice
 
 logger = logging.getLogger("nlp_test")
 
@@ -111,8 +107,8 @@ def rename_file(type="routine"):
                     month=int(dates[0][0]), day=int(dates[0][1])
                 )
                 new_date = new_date_obj.strftime("%Y-%m-%d")
-                if root_date != new_date:
-                    logger.info(f"old - {root_date},new - {new_date}")
+                # if root_date != new_date:
+                #     logger.info(f"old - {root_date},new - {new_date}")
                     # new_root = Path(root).with_name(new_date)
                     # root_path = Path(root)
                     # root_path.rename(new_root)

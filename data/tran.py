@@ -3,7 +3,6 @@ import json
 from pathlib import Path
 
 
-
 def csv_to_json(csv_name):
     input_file = Path(f"data/uncheck/{csv_name}.csv")
     output_file = Path(f"data/uncheck/{csv_name}.json")

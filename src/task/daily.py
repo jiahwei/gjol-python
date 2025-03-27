@@ -1,15 +1,14 @@
-from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime
-from fastapi import  Depends
-from src.database import get_session,engine
-from sqlmodel import Session,select,desc
+
+from apscheduler.schedulers.background import BackgroundScheduler
+from fastapi import Depends
+from sqlmodel import Session, desc, select
 
 from src.bulletin.models import BulletinDB
-from src.bulletin_list.service import download_bulletin_list
-from src.spiders.service import download_notice,resolve_notice
 from src.bulletin_list.schemas import DownloadBulletin
-
-
+from src.bulletin_list.service import download_bulletin_list
+from src.database import engine, get_session
+from src.spiders.service import download_notice, resolve_notice
 
 scheduler = BackgroundScheduler()
 

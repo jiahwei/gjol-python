@@ -1,21 +1,16 @@
 import json
-from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import Session, select, and_, desc
-
-from starlette.responses import StreamingResponse
 import time
 
-from src.bulletin.schemas import (
-    DatePayload,
-    BaseBulletinInfo,
-    BulletinInfo,
-    ListInVersionReturn,
-)
-from src.bulletin.models import BulletinDB
-from src.version.models import Version
-from src.models import ArchiveDesc
-from src.database import get_session
+from fastapi import APIRouter, Depends, HTTPException
+from sqlmodel import Session, and_, desc, select
+from starlette.responses import StreamingResponse
 
+from src.bulletin.models import BulletinDB
+from src.bulletin.schemas import (BaseBulletinInfo, BulletinInfo, DatePayload,
+                                  ListInVersionReturn)
+from src.database import get_session
+from src.models import ArchiveDesc
+from src.version.models import Version
 
 router = APIRouter()
 def event_stream():
