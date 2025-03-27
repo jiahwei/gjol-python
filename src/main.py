@@ -29,7 +29,7 @@ async def lifespan(app: FastAPI):
     ml_models["create_db_and_tables"] = create_db_and_tables
     # ml_models["apscheduler_start"] = apscheduler_start
     # await apscheduler_start()
-    test_resolve_notice("2025-02-05")
+    test_resolve_notice(test_date="2025-02-05")
     # make_train_csv()
     # train_model()
     # add_all_html()

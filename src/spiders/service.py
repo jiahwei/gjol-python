@@ -1,4 +1,5 @@
 import os, shutil, json, requests, re, warnings, time, random, sqlite3, sys
+from typing import Any
 from pathlib import Path
 from datetime import date, datetime, timedelta
 from bs4 import BeautifulSoup, Tag
@@ -8,6 +9,7 @@ from src.bulletin_list.service import get_bulletin_date, get_bulletin_type
 from src.bulletin_list.schemas import BulletinType
 from src.bulletin.models import BulletinDB
 from src.bulletin.schemas import ContentTotal,ParagraphTopic
+from src.bulletin.service import query_bulletin
 from src.nlp.service import preprocess_text, predict_paragraph_category
 
 from constants import DEFAULT_SQLITE_PATH, BASEURL, DEFAULT_FLODER_PATH_ABSOLUTE
@@ -79,78 +81,94 @@ def download_notice(bulletin_info: DownloadBulletin) -> Path | None:
     return content_file_name
 
 
-def get_base_bulletin(
-    content_path: Path | None, bulletin_info: DownloadBulletin
-) -> BulletinDB:
-    info = {
-        "bulletin_date": get_bulletin_date(bulletin_info),
-        "total_leng": 0,
-        "content_total_arr": "",
-        "bulletin_name": bulletin_info.name,
-        "version_id": None,
-        "rank_id": 0,
-        "type": get_bulletin_type(bulletin_info.name).value,
-    }
-    return BulletinDB(**info)
-
 
 def resolve_notice(
     content_path: Path | None, bulletin_info: DownloadBulletin
 ) -> BulletinDB | None:
-    """解析公告
+    """解析公告内容并分类段落
 
     Args:
         content_path (Path | None): 公告content.html的路径
         bulletin_info (DownloadBulletin): 公告信息
 
     Returns:
-        BulletinDB | None: 解析后的公告
+        BulletinDB | None: 解析后的公告对象，如果解析失败则返回None
     """    
     if content_path is None:
-        logger.warning("content_path is None")
+        logger.warning(f"公告 {bulletin_info.name} 的content_path为None，无法解析")
         return None
-    base_bulletin = get_base_bulletin(content_path, bulletin_info)
-    content = content_path.read_text(encoding="utf-8")
-    soup = BeautifulSoup(content, "html5lib")
-    details_div = soup.find("div", class_="details")
-    if not isinstance(details_div, Tag):
-        logger.warning("details_div为空，规则失效")
+    
+    try:
+        # 获取基础公告信息
+        base_bulletin: BulletinDB = query_bulletin(bulletin_info=bulletin_info)
+        
+        # 读取并解析HTML内容
+        content: str = content_path.read_text(encoding="utf-8")
+        soup: BeautifulSoup = BeautifulSoup(content, "html5lib")
+        details_div = soup.find("div", class_="details")
+        
+        if not isinstance(details_div, Tag):
+            logger.warning(f"公告 {bulletin_info.name} 的details_div为空，规则失效")
+            return base_bulletin
+            
+        # 提取所有段落
+        paragraphs = details_div.find_all("p")
+        if not paragraphs:
+            logger.warning(f"公告 {bulletin_info.name} 未找到段落内容")
+            return base_bulletin
+            
+        # 按类型分组段落
+        category_contents: dict[str, list[str]] = {}  # 类型 -> 内容列表
+        category_lengths: dict[str, int] = {}   # 类型 -> 总长度
+        
+        # 处理每个段落
+        for p in paragraphs:
+            p_text:str = p.text.strip()
+            if not p_text:
+                continue
+                
+            words = preprocess_text(p_text)
+            if words.strip():
+                category = predict_paragraph_category(words)
+                logger.debug(f"段落分类: {p_text[:30]}... -> {category}")
+                
+                # 将段落添加到对应类型
+                if category not in category_contents:
+                    category_contents[category] = []
+                    category_lengths[category] = 0
+                
+                category_contents[category].append(p_text)
+                category_lengths[category] += len(p_text)
+        
+        # 如果没有有效内容，返回基础公告
+        if not category_contents:
+            logger.warning(f"公告 {bulletin_info.name} 没有有效内容可分类")
+            return base_bulletin
+        
+        # 构建内容数组
+        content_total_arr: list[ContentTotal] = []
+        total_leng: int = 0
+        
+        for category, contents in category_contents.items():
+            content_item = ContentTotal(
+                type=ParagraphTopic(category),
+                leng=category_lengths[category],
+                content=contents
+            )
+            total_leng += category_lengths[category]
+            content_total_arr.append(content_item)
+        
+        # 更新公告信息
+        content_total_json = json.dumps([item.model_dump() for item in content_total_arr], ensure_ascii=False)
+        base_bulletin.content_total_arr = content_total_json
+        base_bulletin.total_leng = total_leng
+        
+        logger.info(f"公告 {bulletin_info.name} 解析完成，共 {len(content_total_arr)} 种类型，总长度 {total_leng}")
         return base_bulletin
-    paragraphs = details_div.find_all("p")
-    # 按类型分组段落
-    category_contents = {}  # 类型 -> 内容列表
-    category_lengths = {}   # 类型 -> 总长度
-    
-    for p in paragraphs:
-        p_text = p.text
-        words = preprocess_text(p_text)
-        if words.strip():
-            category = predict_paragraph_category(words)
-            logger.info(f"{p_text},段落类型：{category}")
-            
-            # 将段落添加到对应类型
-            if category not in category_contents:
-                category_contents[category] = []
-                category_lengths[category] = 0
-            
-            category_contents[category].append(p_text)
-            category_lengths[category] += len(p_text)
-    
-
-    content_total_arr:list[ContentTotal] = []
-    for category, contents in category_contents.items():
-        content_item = ContentTotal(
-            type=ParagraphTopic(category),
-            leng=category_lengths[category],
-            content=contents
-        )
-        content_total_arr.append(content_item)
-    
-    
-    content_total_json = json.dumps([item.model_dump() for item in content_total_arr], ensure_ascii=False)
-    base_bulletin.content_total_arr = content_total_json
-
-    return base_bulletin    
+        
+    except Exception as e:
+        logger.error(f"解析公告 {bulletin_info.name} 时发生错误: {str(e)}")
+        return None
 
 
 def check_bulletin_download(folder_date: str, bulletin_type: BulletinType) -> bool:
