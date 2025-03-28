@@ -1,22 +1,20 @@
+""" 爬虫服务模块
+该模块提供了爬虫服务的相关函数和类。
+主要功能包括：
+- 下载公告
+- 解析公告内容并分类段落
+- 检查公告是否已下载
+"""
 import json
 import logging
-import os
 import random
-import re
-import shutil
-import sqlite3
-import sys
 import time
-import warnings
-from datetime import date, datetime, timedelta
 from pathlib import Path
-from typing import Any
 
 import requests
 from bs4 import BeautifulSoup, Tag
 
-from constants import (BASEURL, DEFAULT_FLODER_PATH_ABSOLUTE,
-                       DEFAULT_SQLITE_PATH)
+from constants import (BASEURL, DEFAULT_FLODER_PATH_ABSOLUTE)
 from src.bulletin.models import BulletinDB
 from src.bulletin.schemas import ContentTotal, ParagraphTopic
 from src.bulletin.service import query_bulletin
