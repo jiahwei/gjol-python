@@ -1,8 +1,6 @@
 import logging
 import os
 import re
-import shutil
-import time
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Sequence
@@ -10,15 +8,13 @@ from typing import Sequence
 from bs4 import BeautifulSoup, Tag
 from sqlmodel import Session, and_, desc, select, update
 
-from constants import (BASEURL, DEFAULT_FLODER_PATH,
-                       DEFAULT_FLODER_PATH_ABSOLUTE)
+from constants import DEFAULT_FLODER_PATH_ABSOLUTE
 from src.bulletin.models import BulletinDB
 from src.bulletin.service import update_bulletin
 from src.bulletin_list.models import BulletinList
 from src.bulletin_list.schemas import BulletinType, DownloadBulletin
-from src.bulletin_list.service import (get_bulletin_date, get_bulletin_type,
-                                       get_really_bulletin_date)
-from src.database import engine, get_session
+from src.bulletin_list.service import get_bulletin_type,get_really_bulletin_date
+from src.database import engine
 from src.spiders.service import download_notice, resolve_notice
 
 logger = logging.getLogger("nlp_test")

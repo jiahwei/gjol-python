@@ -10,7 +10,7 @@ from src.database import create_db_and_tables
 from src.logs.service import LOGGING_CONFIG
 from src.nlp.make_data import make_train_csv
 from src.nlp.train_model import train_model
-from src.spiders.test import test_resolve_notice
+from src.dev.service import test_resolve_notice
 
 
 def setup_logging():
@@ -29,7 +29,7 @@ async def lifespan(app: FastAPI):
     ml_models["create_db_and_tables"] = create_db_and_tables
     # ml_models["apscheduler_start"] = apscheduler_start
     # await apscheduler_start()
-    test_resolve_notice(test_date="2025-02-05")
+    test_resolve_notice()
     # make_train_csv()
     # train_model()
     # add_all_html()
