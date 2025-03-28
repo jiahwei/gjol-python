@@ -9,7 +9,6 @@ from src.bulletin.models import BulletinDB
 from src.bulletin.schemas import (BaseBulletinInfo, BulletinInfo, DatePayload,
                                   ListInVersionReturn)
 from src.database import get_session
-from src.models import ArchiveDesc
 from src.version.models import Version
 
 router = APIRouter()

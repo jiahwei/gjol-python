@@ -66,35 +66,49 @@ def get_version_info_by_bulletin_date(
     Returns:
         VersionInfo | None: 包含版本ID和公告排名的对象，如果找不到对应版本则返回None
     """
-    with Session(engine) as session:
-        statement = select(Version).filter(
-            and_(
-                Version.start_date <= bulletin_date,
-                or_(Version.end_date >= bulletin_date, Version.end_date is None),
+    try:
+        with Session(engine) as session:
+            # 查找对应日期的版本
+            statement = select(Version).filter(
+                and_(
+                    Version.start_date <= bulletin_date,
+                    or_(Version.end_date >= bulletin_date, Version.end_date.is_(None)),  # type: ignore
+                )
             )
-        )
-        result = session.exec(statement).first()
-        if result is None:
-            return None
-        version_info = result.model_dump()
-        version_id = version_info["id"]
-        statement_bulletin = (
-            select(BulletinDB)
-            .where(BulletinDB.version_id == version_id)
-            .order_by(desc(BulletinDB.total_leng))
-        )
-        bulletin_list_by_version_id = session.exec(statement_bulletin).all()
-        logger.info("bulletin_list_by_version_id")
-        logger.info(bulletin_list_by_version_id)
-        if len(bulletin_list_by_version_id) == 0:
-            logger.warning("order 设置失败")
-            return VersionInfo(version_id=version_id, rank=-1)
-        rank = 1
-        for bulletin in bulletin_list_by_version_id:
-            if bulletin.total_leng < total_leng:
-                break
-            rank += 1
-        return VersionInfo(version_id=version_id, rank=-1)
+            result: Version | None = session.exec(statement).first()
+            
+            if result is None:
+                logger.warning(f"未找到日期 {bulletin_date} 对应的版本")
+                return None
+
+            version_id: int | None = result.id if result.id is not None else -1
+            
+            # 获取该版本下所有公告并按总长度排序
+            statement_bulletin = (
+                select(BulletinDB)
+                .where(BulletinDB.version_id == version_id)
+                .order_by(desc(BulletinDB.total_leng))
+            )
+            bulletin_list_by_version_id = session.exec(statement_bulletin).all()
+            
+            # 如果没有公告，返回默认排名1
+            if not bulletin_list_by_version_id:
+                logger.warning(f"版本ID {version_id} 下没有公告，返回默认排名1")
+                return VersionInfo(version_id=version_id, rank=1)
+            
+            # 计算当前公告的排名
+            rank = 1
+            for bulletin in bulletin_list_by_version_id:
+                if bulletin.total_leng <= total_leng:
+                    break
+                rank += 1
+            
+            logger.debug(f"公告(长度:{total_leng})在版本ID {version_id} 中的排名为 {rank}")
+            return VersionInfo(version_id=version_id, rank=rank)
+            
+    except Exception as e:
+        logger.error(f"获取版本信息时发生错误: {str(e)}")
+        return None
 
 
 def sort_version():
@@ -127,5 +141,30 @@ def sort_version():
                 total=version.total,
             )
             session.add(new_version)
+
+        session.commit()
+
+
+def fix_bulletin_ranks(version_id: int):
+    """修复指定版本的公告排名
+    
+    根据公告的总长度对指定版本ID的所有公告重新进行排名。
+    排名基于公告的total_leng字段，按降序排列，长度越大排名越靠前。
+    
+    Args:
+        version_id (int): 需要修复排名的版本ID
+    """
+    with Session(engine) as session:
+        statement_bulletin = (
+            select(BulletinDB)
+            .where(BulletinDB.version_id == version_id)
+            .order_by(desc(BulletinDB.total_leng))
+        )
+        bulletin_list_by_version_id = session.exec(statement_bulletin).all()
+
+        # 重新计算 rank_id
+        for rank, bulletin in enumerate(bulletin_list_by_version_id, start=1):
+            bulletin.rank_id = rank
+            session.add(bulletin)
 
         session.commit()
