@@ -5,13 +5,11 @@ from pathlib import Path
 
 from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler  # type: ignore
-from sqlmodel import Session, desc, select
 
 from src.bulletin.models import BulletinDB
-from src.bulletin.service import update_bulletin
+from src.bulletin.service import update_bulletin,get_new_date
 from src.bulletin_list.schemas import DownloadBulletin
 from src.bulletin_list.service import download_bulletin_list
-from src.database import engine
 from src.spiders.service import download_notice, resolve_notice
 
 scheduler = BackgroundScheduler()
@@ -25,8 +23,7 @@ def periodic_function():
 
 def dayily_fun() -> None:
     """每天定时执行的任务"""
-    first_date_str: str | None = get_new_date()
-    bulletin_list: list[DownloadBulletin] = download_bulletin_list(first_date_str)
+    bulletin_list: list[DownloadBulletin] = download_bulletin_list()
     for bulletin_info in bulletin_list:
         content_url: Path | None = download_notice(bulletin_info)
         bulletin: BulletinDB | None  = resolve_notice(content_path=content_url, bulletin_info = bulletin_info)
@@ -39,14 +36,3 @@ async def apscheduler_start() -> None:
     scheduler.add_job(periodic_function, "interval", seconds=3)
     scheduler.start()
 
-def get_new_date() -> str | None:
-    """查询数据库中最新一条公告的日期"""
-    with Session(engine) as session:
-        statement = (
-            select(BulletinDB.bulletin_date)
-            .order_by(desc(BulletinDB.bulletin_date))
-            .limit(1)
-        )
-        result = session.exec(statement)
-        first_result = result.first()
-        return first_result

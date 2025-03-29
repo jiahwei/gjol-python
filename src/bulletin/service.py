@@ -3,7 +3,8 @@
 主要功能包括：
 - 查询公告信息：根据公告名称查询数据库中的公告信息，如果不存在则返回新创建的基础公告信息对象。
 """
-from sqlmodel import Session, select
+from sqlmodel import Session, select , desc
+
 
 from src.database import engine
 from src.bulletin.models import BulletinDB
@@ -11,6 +12,18 @@ from src.bulletin_list.schemas import DownloadBulletin
 from src.bulletin_list.service import get_bulletin_date, get_bulletin_type
 from src.version.service import get_version_info_by_bulletin_date
 from src.version.schemas import VersionInfo
+
+def get_new_date() -> str | None:
+    """查询数据库中最新一条公告的日期"""
+    with Session(engine) as session:
+        statement = (
+            select(BulletinDB.bulletin_date)
+            .order_by(desc(BulletinDB.bulletin_date))
+            .limit(1)
+        )
+        result = session.exec(statement)
+        first_result = result.first()
+        return first_result
 
 def query_bulletin(bulletin_info: DownloadBulletin) -> BulletinDB:
     """

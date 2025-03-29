@@ -1,3 +1,9 @@
+"""公告列表模块的方法
+该模块提供了公告列表相关的方法，包括获取公告列表、下载公告列表、更新公告列表等功能。
+"""
+from bs4.element import NavigableString, Tag
+
+
 import random
 import re
 import time
@@ -9,11 +15,32 @@ from sqlmodel import Session, and_, desc, select
 
 from src.bulletin_list.models import BulletinList
 from src.bulletin_list.schemas import BulletinType, DownloadBulletin
-from src.database import engine, get_session
+from src.database import engine
 
 header = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36 Edg/117.0.2045.31"
 }
+
+def get_latest_bulletin_list() -> BulletinList:
+    """查询数据库中最新的公告数据
+    
+    Returns:
+        BulletinList: 数据库中日期最新的公告，如果数据库为空则返回默认公告对象
+    """
+    with Session(engine) as session:
+        statement = select(BulletinList).order_by(desc(BulletinList.date)).limit(1)
+        latest_info: BulletinList | None = session.exec(statement).first()
+        
+        if latest_info is not None:
+            return latest_info
+            
+        # 数据库中没有记录时返回默认值
+        return BulletinList(
+            name="default", 
+            href="", 
+            date="1998-08-22", 
+            type=BulletinType.OTHER.value
+        )
 
 
 def get_list_url(i: int = 0) -> str:
@@ -33,103 +60,128 @@ def get_list_url(i: int = 0) -> str:
     return base_url
 
 
-def get_bulletin_list(url: str, first_date_str: str | None) -> list[DownloadBulletin]:
+def get_bulletin_list(url: str, latest_date: str | None = None) -> list[DownloadBulletin]:
     """获取要下载的公告列表
+    
+    从指定URL获取公告列表，并根据最新日期过滤出需要下载的公告。
+    同时会将获取到的所有公告信息保存到数据库中。
 
     Args:
         url (str): 公告列表的URL
-        first_date_str (str | None): 数据库中最新一条公告的日期
+        latest_date (str | None, optional): 数据库中最新一条公告的日期，用于过滤。默认为None。
 
     Returns:
-        list[DownloadBulletin]: 公告列表
+        list[DownloadBulletin]: 需要下载的公告列表
     """
-
-    res = requests.get(url, headers=header).text
-    soup = BeautifulSoup(res, "lxml")
-    allList = soup.find("div", class_="list_box").find_all("li")  # type: ignore
-    resList: list[DownloadBulletin] = []
-    if first_date_str is not None:
-        firstNoticeDate = datetime.strptime(first_date_str, "%Y-%m-%d")
-    else:
-        firstNoticeDate = datetime.min  # Initialize to a default value if first_date_str is None
-    for li in allList:
-        infoForA = li.a
-        infoForTime = li.span
-        date = datetime.strptime(infoForTime.string, "%Y-%m-%d")
-        info = DownloadBulletin(
-            name=infoForA.attrs["title"],
-            href=infoForA.attrs["href"],
-            date=infoForTime.string,
+    try:
+        res: str = requests.get(url, headers=header, timeout=30).text
+        soup: BeautifulSoup = BeautifulSoup(res, "lxml")
+        target_div: Tag | NavigableString | None = soup.find("div", class_="list_box")
+        
+        if target_div is None or not isinstance(target_div, Tag):
+            print(f"无法在页面中找到公告列表区域: {url}")
+            return []
+            
+        all_list = target_div.find_all("li")
+        res_list: list[DownloadBulletin] = []
+        
+        # 设置日期比较基准
+        reference_date: datetime = (
+            datetime.strptime(latest_date, "%Y-%m-%d") 
+            if latest_date is not None 
+            else datetime.min
         )
-        update_bulletin_list(info=info)
-        if date > firstNoticeDate or first_date_str is None:
-            resList.append(info)
-        else:
-            print(infoForA.attrs["title"])
-    return resList
+        
+        for li in all_list:
+            # 提取公告信息
+            a_dom = li.a
+            time_span = li.span
+            
+            if not a_dom or not time_span or not time_span.string:
+                continue  # 跳过无效数据
+                
+            current_date: datetime = datetime.strptime(time_span.string, "%Y-%m-%d")
+            
+            # 创建公告对象
+            bulletin_info = DownloadBulletin(
+                name=a_dom.attrs.get("title", ""),
+                href=a_dom.attrs.get("href", ""),
+                date=time_span.string,
+            )
+            
+            # 保存到数据库
+            update_bulletin_list(info=bulletin_info)
+            
+            # 只返回比最新日期更新的公告
+            if current_date > reference_date or latest_date is None:
+                res_list.append(bulletin_info)
+            
+        return res_list
+        
+    except requests.RequestException as e:
+        print(f"请求公告列表失败: {url}, 错误: {e}")
+        return []
+    except Exception as e:
+        print(f"处理公告列表时出错: {e}")
+        return []
 
 
-def download_bulletin_list(
-    first_date_str: str | None, pageNum: int = 1
-) -> list[DownloadBulletin]:
+def download_bulletin_list(pageNum: int = 1) -> list[DownloadBulletin]:
     """下载公告列表
 
     Args:
-        first_date_str (str | None): 数据库中最新一条公告的日期
         pageNum (int, optional): 下载几页公告. Defaults to 1.
 
     Returns:
         list[DownloadBulletin]: 公告列表
     """
     bulletin_list: list[DownloadBulletin] = []
+    first_date_str: str = get_latest_bulletin_list().date
     for i in range(pageNum):
-        url = get_list_url(i)
-        new_list = get_bulletin_list(url, first_date_str)
+        url: str = get_list_url(i)
+        new_list: list[DownloadBulletin] = get_bulletin_list(url, first_date_str)
         bulletin_list.extend(new_list)
     return bulletin_list
 
 
-def download_all_list(url: str):
-    res = requests.get(url, headers=header).text
-    soup = BeautifulSoup(res, "lxml")
-    allList = soup.find("div", class_="list_box").find_all("li")  # type: ignore
-    resList: list[DownloadBulletin] = []
-    for li in allList:
-        infoForA = li.a
-        infoForTime = li.span
-        date = datetime.strptime(infoForTime.string, "%Y-%m-%d")
-        info = DownloadBulletin(
-            name=infoForA.attrs["title"],
-            href=infoForA.attrs["href"],
-            date=infoForTime.string,
-        )
-        update_bulletin_list(info=info)
-    sleeptime = random.randint(1, 10)
-    print(f"{time.ctime()}:{url}下载完成,等待{sleeptime}秒")
-    time.sleep(sleeptime)
-
-
 def update_bulletin_list(info: DownloadBulletin):
+    """更新公告列表数据库
+    
+    将公告信息保存到数据库中，如果数据已存在则跳过
+    
+    Args:
+        info (DownloadBulletin): 要保存的公告信息
+    """
     with Session(engine) as session:
-        bulletin_type = get_bulletin_type(info.name)
-        new_bulletin = BulletinList(name=info.name, href=info.href, date=info.date ,type=bulletin_type.value)
-        try:
-            session.add(new_bulletin)
-            session.commit()
-            print("插入新数据成功")
-        except:
-            session.rollback()
-            print("数据已存在，不执行插入")
-
-
-def get_new_date() -> str | None:
-    """查询数据库bulletin_list中最新一条公告的日期"""
-    with Session(engine) as session:
-        statement = select(BulletinList.date).order_by(desc(BulletinList.date)).limit(1)
-        result = session.exec(statement)
-        first_result = result.first()
-        return first_result
-
+        # 先检查数据是否已存在
+        statement = select(BulletinList).where(
+            and_(
+                BulletinList.name == info.name,
+                BulletinList.date == info.date
+            )
+        )
+        existing = session.exec(statement).first()
+        
+        # 如果数据不存在，则插入
+        if existing is None:
+            bulletin_type = get_bulletin_type(info.name)
+            new_bulletin = BulletinList(
+                name=info.name, 
+                href=info.href, 
+                date=info.date, 
+                type=bulletin_type.value
+            )
+            
+            try:
+                session.add(new_bulletin)
+                session.commit()
+                print(f"插入新数据成功: {info.name}")
+            except Exception as e:
+                session.rollback()
+                print(f"插入数据失败: {info.name}, 错误: {str(e)}")
+        else:
+            # 数据已存在，不执行任何操作
+            print(f"数据已存在，不执行插入: {info.name}")
 
 def get_bulletin_date(bulletin_info: DownloadBulletin) -> str:
     year_month = bulletin_info.date[:-3]
@@ -160,11 +212,11 @@ def get_bulletin_type(bulletin_name: str) -> BulletinType:
     return BulletinType.OTHER
 
 
-def get_really_bulletin_date(bulletin_info: BulletinList) -> str:
+def get_really_bulletin_date(bulletin_info: DownloadBulletin | BulletinList) -> str:
     """公告列表中的日期多数是周三，处理成周四。因为bulletins文件夹中使用更新日（周四）作为文件名
 
     Args:
-        bulletin_info (BulletinList): _description_
+        bulletin_info (DownloadBulletin | BulletinList): _description_
 
     Returns:
         str: 处理后的日期

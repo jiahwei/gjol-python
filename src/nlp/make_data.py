@@ -26,9 +26,7 @@ def make_train_csv():
         data = []
         for res in buletin_list[-30:-10]:
             if res is not None:
-                new_date = get_really_bulletin_date(res)
-                bulletin_info = DownloadBulletin(name=res.name, href=res.href, date=new_date)
-                content_url = download_notice(bulletin_info)
+                content_url = download_notice(res)
                 if content_url is None:
                     print("content_url None")
                     continue

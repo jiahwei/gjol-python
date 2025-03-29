@@ -18,7 +18,7 @@ from src.database import engine
 from src.spiders.service import download_notice, resolve_notice
 
 logger = logging.getLogger("nlp_test")
-
+daily_logger = logging.getLogger("daily")
 
 def test_resolve_notice(test_date : str | None =None) -> None:
     with Session(engine) as session:
@@ -29,12 +29,8 @@ def test_resolve_notice(test_date : str | None =None) -> None:
         )
         buletin_list: Sequence[BulletinList] = session.exec(statement).all()
         for res in buletin_list:
-            new_date: str = get_really_bulletin_date(bulletin_info=res)
-            bulletin_info: DownloadBulletin = DownloadBulletin(
-                name=res.name, href=res.href, date=new_date
-            )
-            content_url: Path | None = download_notice(bulletin_info)
-            bulletin: BulletinDB | None = resolve_notice(content_path=content_url, bulletin_info = bulletin_info)
+            content_url: Path | None = download_notice(res)
+            bulletin: BulletinDB | None = resolve_notice(content_path=content_url, bulletin_info = res)
             if bulletin is not None:
                 update_bulletin(bulletin_info=bulletin)
                 

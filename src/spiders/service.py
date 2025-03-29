@@ -19,27 +19,30 @@ from src.bulletin.models import BulletinDB
 from src.bulletin.schemas import ContentTotal, ParagraphTopic
 from src.bulletin.service import query_bulletin
 from src.bulletin_list.schemas import BulletinType, DownloadBulletin
-from src.bulletin_list.service import get_bulletin_date, get_bulletin_type
+from src.bulletin_list.models import BulletinList
+from src.bulletin_list.service import get_really_bulletin_date, get_bulletin_type
 from src.nlp.service import predict_paragraph_category, preprocess_text
 
 logger = logging.getLogger("spiders_test")
+daily_logger = logging.getLogger("daily")
 
 header = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36 Edg/117.0.2045.31"
 }
 
 
-def download_notice(bulletin_info: DownloadBulletin) -> Path | None:
+def download_notice(bulletin_info: DownloadBulletin | BulletinList ) -> Path | None:
     """下载公告
 
     Args:
-        bulletin_info (DownloadBulletin): 公告信息
+        bulletin_info (DownloadBulletin | BulletinList): 公告信息
 
     Returns:
         Path | None: content.html的路径
     """
+
     bulletin_type = get_bulletin_type(bulletin_info.name)
-    floder_name = bulletin_info.date
+    floder_name = get_really_bulletin_date(bulletin_info)
 
     if bulletin_type in {BulletinType.CIRCULAR, BulletinType.OTHER}:
         # logger.info(f"{bulletin_info.name},不是公告，不需要处理,跳过,{time.ctime()}")
@@ -89,7 +92,7 @@ def download_notice(bulletin_info: DownloadBulletin) -> Path | None:
 
 
 def resolve_notice(
-    content_path: Path | None, bulletin_info: DownloadBulletin
+    content_path: Path | None, bulletin_info: DownloadBulletin | BulletinList
 ) -> BulletinDB | None:
     """解析公告内容并分类段落
 
