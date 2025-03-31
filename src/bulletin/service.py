@@ -9,6 +9,7 @@ from sqlmodel import Session, select , desc
 from src.database import engine
 from src.bulletin.models import BulletinDB
 from src.bulletin_list.schemas import DownloadBulletin
+from src.bulletin_list.models import BulletinList
 from src.bulletin_list.service import get_bulletin_date, get_bulletin_type
 from src.version.service import get_version_info_by_bulletin_date
 from src.version.schemas import VersionInfo
@@ -25,7 +26,7 @@ def get_new_date() -> str | None:
         first_result = result.first()
         return first_result
 
-def query_bulletin(bulletin_info: DownloadBulletin) -> BulletinDB:
+def query_bulletin(bulletin_info: DownloadBulletin | BulletinList) -> BulletinDB:
     """
     查询公告信息,如果不存在则返回新创建的基础公告信息对象
 

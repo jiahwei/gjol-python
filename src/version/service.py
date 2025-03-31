@@ -71,8 +71,8 @@ def get_version_info_by_bulletin_date(
             # 查找对应日期的版本
             statement = select(Version).filter(
                 and_(
-                    Version.start_date <= bulletin_date,
-                    or_(Version.end_date >= bulletin_date, Version.end_date.is_(None)),  # type: ignore
+                    or_(Version.start_date.is_(None), Version.start_date <= bulletin_date),
+                    or_(Version.end_date.is_(None), Version.end_date >= bulletin_date),
                 )
             )
             result: Version | None = session.exec(statement).first()

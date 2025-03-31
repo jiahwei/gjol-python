@@ -69,19 +69,19 @@ def download_notice(bulletin_info: DownloadBulletin | BulletinList ) -> Path | N
     soup = BeautifulSoup(res, "lxml")
 
     source_file_name = parent_path.joinpath("source.html")
-    source_file_name.write_text(str(soup), encoding="utf-8")
+    _ = source_file_name.write_text(str(soup), encoding="utf-8")
 
     # 过滤不需要的标签,生成content.html
     for excludedDivName in ["more_button", "bdsharebuttonbox"]:
         excluded_div = soup.find("div", {"class": excludedDivName})
         if excluded_div is not None:
-            excluded_div.extract()
+            _ = excluded_div.extract()
     excluded_tags = soup.select("script")
     for tag in excluded_tags:
-        tag.extract()
+        _ = tag.extract()
     details = soup.find("div", class_="details")
     content_file_name = parent_path.joinpath("content.html")
-    content_file_name.write_text(str(details), encoding="utf-8")
+    _ = content_file_name.write_text(str(details), encoding="utf-8")
 
     logger.info(f"{time.ctime()}:{bulletin_info.name}下载完成,等待{sleeptime}秒")
     print(f"{time.ctime()}:{bulletin_info.name}下载完成,等待{sleeptime}秒")

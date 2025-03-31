@@ -183,7 +183,7 @@ def update_bulletin_list(info: DownloadBulletin):
             # 数据已存在，不执行任何操作
             print(f"数据已存在，不执行插入: {info.name}")
 
-def get_bulletin_date(bulletin_info: DownloadBulletin) -> str:
+def get_bulletin_date(bulletin_info: DownloadBulletin | BulletinList) -> str:
     year_month = bulletin_info.date[:-3]
     match = re.search(r"(\d+)月(\d+)日", bulletin_info.name)
     day = "01" if match is None else match.group(2)

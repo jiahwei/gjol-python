@@ -1,19 +1,19 @@
 import logging
 import os
 import re
-from datetime import date, datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import Sequence
+from collections.abc import Sequence 
 
 from bs4 import BeautifulSoup, Tag
-from sqlmodel import Session, and_, desc, select, update
+from sqlmodel import Session, select
 
 from constants import DEFAULT_FLODER_PATH_ABSOLUTE
 from src.bulletin.models import BulletinDB
 from src.bulletin.service import update_bulletin
 from src.bulletin_list.models import BulletinList
 from src.bulletin_list.schemas import BulletinType, DownloadBulletin
-from src.bulletin_list.service import get_bulletin_type,get_really_bulletin_date
+from src.bulletin_list.service import get_bulletin_type
 from src.database import engine
 from src.spiders.service import download_notice, resolve_notice
 
@@ -76,7 +76,7 @@ def resolve_file():
             # logger.info(f"files,{files}")
 
 
-def rename_file(type="routine"):
+def rename_file(type:str="routine"):
     root_dir_path = Path(DEFAULT_FLODER_PATH_ABSOLUTE).joinpath(type)
     for root, dirs, files in os.walk(root_dir_path):
         if root != f"bulletins/{type}" and "source.html" in files:
