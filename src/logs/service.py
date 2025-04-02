@@ -1,16 +1,23 @@
-import logging
-import logging.config
 from pathlib import Path
 
-from src.task import daily
+# 确保日志目录存在
+log_dir = Path("src/logs")
+log_dir.mkdir(exist_ok=True, parents=True)
 
 # 定义日志文件路径
-common_log_path = Path("src/logs/common.log")
-nlp_test_path = Path("src/logs/nlp_test.log")
-spiders_test_path = Path("src/logs/spiders_test.log")
-spiders_history_path = Path("src/logs/spiders_history.log")
-daily_path = Path("src/logs/daily.log")
+common_log_path: Path = Path("src/logs/common.log")
+nlp_test_path: Path = Path("src/logs/nlp_test.log")
+spiders_test_path: Path = Path("src/logs/spiders_test.log")
+spiders_history_path: Path = Path("src/logs/spiders_history.log")
+daily_path: Path = Path("src/logs/daily.log")
+train_path:Path = Path("src/logs/train.log") 
 # 如果需要更多模块，继续添加路径
+
+# 确保所有日志文件存在
+for log_file in [common_log_path, nlp_test_path, spiders_test_path, 
+                spiders_history_path, daily_path, train_path]:
+    if not log_file.exists():
+        log_file.touch()
 
 LOGGING_CONFIG = {
     "version": 1,
@@ -64,6 +71,14 @@ LOGGING_CONFIG = {
             "encoding": "utf-8",
             "mode":"a",
         },
+        "train_handler" : {
+            "class": "logging.FileHandler",
+            "level": "DEBUG",
+            "formatter": "verbose",
+            "filename": str(train_path),
+            "encoding": "utf-8",
+            "mode":"a",
+        }
         # 可以为更多模块添加处理器
     },
     "loggers": {
@@ -87,6 +102,11 @@ LOGGING_CONFIG = {
             "level": "DEBUG",
             "propagate": False,
         },
+        "train": {
+            "handlers": ["train_handler"],
+            "level": "DEBUG",
+            "propagate": False,
+        },        
         # 为更多模块添加日志器
     },
     "root": {

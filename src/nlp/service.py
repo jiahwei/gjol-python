@@ -1,16 +1,12 @@
-import json
+# pyright: reportMissingTypeStubs=false
+# pyright: reportUnknownVariableType=false
+# pyright: reportUnknownMemberType=false
 import logging
 import re
 from pathlib import Path
-from typing import Set
 
 import joblib
 import thulac
-from bs4 import BeautifulSoup, Tag
-
-from src.bulletin.models import BulletinDB
-from src.bulletin.schemas import ContentTotal, ParagraphTopic
-from src.bulletin_list.schemas import BulletinType, DownloadBulletin
 
 # from src.spiders.service import get_base_bulletin
 
@@ -18,7 +14,8 @@ logger = logging.getLogger("nlp_test")
 thu1 = thulac.thulac(user_dict=Path("src/nlp/user_dict.txt"), filt=False, seg_only=True)
 # 加载模型、向量器、标签编码器
 models_dir = Path("src/nlp/models")
-model = joblib.load(models_dir.joinpath("paragraph_classifier.model"))
+# model = joblib.load(models_dir.joinpath("paragraph_classifier.model"))
+model = joblib.load(models_dir.joinpath("ensemble_classifier.model"))
 vectorizer = joblib.load(models_dir.joinpath("tfidf_vectorizer.model"))
 label_encoder = joblib.load(models_dir.joinpath("label_encoder.model"))
 
@@ -48,7 +45,7 @@ def preprocess_text(text: str) -> str:
     return " ".join(words)
 
 
-def load_stopwords() -> Set[str]:
+def load_stopwords() -> set[str]:
     stopwords = set()
     stopwords_path = Path("src/nlp/cn_stopwords.txt")
     with open(stopwords_path, "r", encoding="utf-8") as f:
@@ -65,57 +62,3 @@ def predict_paragraph_category(paragraph_text: str) -> str:
     # 解码标签
     label = label_encoder.inverse_transform(prediction)
     return label[0]
-
-
-def nlp_test(
-    content_path: Path | None, bulletin_info: DownloadBulletin
-) -> BulletinDB | None:
-    if content_path is None:
-        logger.warning("content_path is None")
-        return None
-    logger.info(
-        f"处理{content_path}",
-    )
-    # base_bulletin = get_base_bulletin(content_path, bulletin_info)
-    content = content_path.read_text(encoding="utf-8")
-    soup = BeautifulSoup(content, "html5lib")
-    details_div = soup.find("div", class_="details")
-    if not isinstance(details_div, Tag):
-        logger.warning("details_div为空，规则失效")
-        return base_bulletin
-    paragraphs = details_div.find_all("p")
-    
-    # 按类型分组段落
-    category_contents = {}  # 类型 -> 内容列表
-    category_lengths = {}   # 类型 -> 总长度
-    
-    for p in paragraphs:
-        p_text = p.text
-        words = preprocess_text(p_text)
-        if words.strip():
-            category = predict_paragraph_category(words)
-            logger.info(f"{p_text},段落类型：{category}")
-            
-            # 将段落添加到对应类型
-            if category not in category_contents:
-                category_contents[category] = []
-                category_lengths[category] = 0
-            
-            category_contents[category].append(p_text)
-            category_lengths[category] += len(p_text)
-    
-
-    content_total_arr:list[ContentTotal] = []
-    for category, contents in category_contents.items():
-        content_item = ContentTotal(
-            type=ParagraphTopic(category),
-            leng=category_lengths[category],
-            content=contents
-        )
-        content_total_arr.append(content_item)
-    
-    
-    content_total_json = json.dumps([item.model_dump() for item in content_total_arr], ensure_ascii=False)
-    base_bulletin.content_total_arr = content_total_json
-
-    return base_bulletin

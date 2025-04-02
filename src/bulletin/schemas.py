@@ -32,7 +32,7 @@ class ContentTotal(BaseModel):
     content: list[str]
     
     class Config:
-        use_enum_values = True  # 使用枚举值而不是枚举对象
+        use_enum_values: bool = True  # 使用枚举值而不是枚举对象
 class BulletinInfo(BaseBulletinInfo):
     id:int | None
     name:str | None
@@ -55,5 +55,5 @@ class bulletinAllInfo(BaseModel):
     version_id:int
     order:int
     class Config:
-        from_attributes = True
+        from_attributes: bool = True
 

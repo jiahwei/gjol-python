@@ -20,7 +20,7 @@ from src.spiders.service import download_notice, resolve_notice
 logger = logging.getLogger("nlp_test")
 daily_logger = logging.getLogger("daily")
 
-def test_resolve_notice(test_date : str | None =None) -> None:
+def test_resolve_notice(test_date : str | None =None) -> list[BulletinDB]:
     with Session(engine) as session:
         statement = (
             select(BulletinList)
@@ -28,11 +28,14 @@ def test_resolve_notice(test_date : str | None =None) -> None:
             else select(BulletinList).where(BulletinList.date == test_date)
         )
         buletin_list: Sequence[BulletinList] = session.exec(statement).all()
+        res_list: list[BulletinDB] = []
         for res in buletin_list:
             content_url: Path | None = download_notice(res)
             bulletin: BulletinDB | None = resolve_notice(content_path=content_url, bulletin_info = res)
             if bulletin is not None:
-                update_bulletin(bulletin_info=bulletin)
+                # update_bulletin(bulletin_info=bulletin)
+                res_list.append(bulletin)
+        return res_list
                 
 
 
