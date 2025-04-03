@@ -63,7 +63,7 @@ uvicorn src.main:app --host 0.0.0.0 --port 8000
 
 ```
 
-## 服务器启动脚本
+## 服务器启动脚本（非Docker）
 
 ```bash
 gunicorn src.main:app -c gunicorn.py
