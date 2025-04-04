@@ -11,7 +11,7 @@ from src.bulletin.models import BulletinDB
 from src.bulletin_list.schemas import DownloadBulletin
 from src.bulletin_list.models import BulletinList
 from src.bulletin_list.service import get_bulletin_date, get_bulletin_type
-from src.version.service import get_version_info_by_bulletin_date
+from src.version.service import get_version_id_by_date,get_bulletin_rank
 from src.version.schemas import VersionInfo
 
 def get_new_date() -> str | None:
@@ -38,24 +38,23 @@ def query_bulletin(bulletin_info: DownloadBulletin | BulletinList) -> BulletinDB
     """    
     with Session(engine) as session:
         statement = select(BulletinDB).where(
-            BulletinDB.bulletin_name == bulletin_info.name
+            BulletinDB.bulletin_date == bulletin_info.date
         )
         bulletin: BulletinDB | None = session.exec(statement).first()
         if bulletin:
             result: BulletinDB = BulletinDB.model_validate(bulletin.model_dump())
             session.close()
             return result
-        else:
-            session.close()
-            return BulletinDB(
-                bulletin_date=get_bulletin_date(bulletin_info),
-                total_leng=0,
-                content_total_arr="",
-                bulletin_name=bulletin_info.name,
-                version_id=None,
-                rank_id=0,
-                type=get_bulletin_type(bulletin_name=bulletin_info.name).value,
-            )
+        session.close()
+        return BulletinDB(
+            bulletin_date=get_bulletin_date(bulletin_info),
+            total_leng=0,
+            content_total_arr="",
+            bulletin_name=bulletin_info.name,
+            version_id = get_version_id_by_date(bulletin_info.date),
+            rank_id=0,
+            type=get_bulletin_type(bulletin_name=bulletin_info.name).value,
+        )
 
 
 def update_bulletin(bulletin_info: BulletinDB) -> None:
@@ -80,10 +79,8 @@ def update_bulletin(bulletin_info: BulletinDB) -> None:
                 # 更新字段
                 bulletin.content_total_arr = bulletin_info.content_total_arr
                 bulletin.total_leng = bulletin_info.total_leng
-                version_info:VersionInfo | None =  get_version_info_by_bulletin_date(bulletin_date=bulletin_info.bulletin_date,total_leng= bulletin_info.total_leng)
-                if version_info:
-                    bulletin.version_id = version_info.version_id
-                    bulletin.rank_id = version_info.rank
+                rank:int = get_bulletin_rank(version_id = bulletin_info.version_id,total_leng= bulletin_info.total_leng)
+                bulletin.rank_id = rank
                 session.add(bulletin)
                 session.commit()
                 session.refresh(bulletin)

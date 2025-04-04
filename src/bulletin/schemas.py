@@ -1,3 +1,7 @@
+"""公告模块数据类型
+
+定义了数据传输对象 (DTO)，主要用于 API 接口的请求和响应
+"""
 from datetime import date
 from enum import Enum
 
