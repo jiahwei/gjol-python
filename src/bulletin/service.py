@@ -10,7 +10,7 @@ from src.database import engine
 from src.bulletin.models import BulletinDB
 from src.bulletin_list.schemas import DownloadBulletin
 from src.bulletin_list.models import BulletinList
-from src.bulletin_list.service import get_bulletin_date, get_bulletin_type
+from src.bulletin_list.service import get_really_bulletin_date, get_bulletin_type
 from src.version.service import get_version_id_by_date,get_bulletin_rank
 from src.version.schemas import VersionInfo
 
@@ -38,7 +38,7 @@ def query_bulletin(bulletin_info: DownloadBulletin | BulletinList) -> BulletinDB
     """    
     with Session(engine) as session:
         statement = select(BulletinDB).where(
-            BulletinDB.bulletin_date == bulletin_info.date
+            BulletinDB.original_date == bulletin_info.date
         )
         bulletin: BulletinDB | None = session.exec(statement).first()
         if bulletin:
@@ -47,12 +47,12 @@ def query_bulletin(bulletin_info: DownloadBulletin | BulletinList) -> BulletinDB
             return result
         session.close()
         return BulletinDB(
-            bulletin_date=get_bulletin_date(bulletin_info),
+            bulletin_date=get_really_bulletin_date(bulletin_info),
+            original_date=bulletin_info.date,
             total_leng=0,
             content_total_arr="",
             bulletin_name=bulletin_info.name,
             version_id = get_version_id_by_date(bulletin_info.date),
-            rank_id=0,
             type=get_bulletin_type(bulletin_name=bulletin_info.name).value,
         )
 

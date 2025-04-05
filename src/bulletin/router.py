@@ -54,7 +54,7 @@ def bulletin_by_date(payload: DatePayload, session: Session = Depends(get_sessio
         list[BulletinDB]: 符合日期条件的公告列表
     """
     if not (payload.start_date and payload.end_date):
-        return []
+        return HTTPException(status_code=500, detail="payload 不能为空")
     statement = select(BulletinDB).where(
         and_(
             BulletinDB.bulletin_date >= str(payload.start_date),
@@ -77,17 +77,30 @@ def list_in_version(
     """
     statement = select(Version, BulletinDB).where(BulletinDB.version_id == Version.id)
     results = session.exec(statement).all()
-    version_dict = {}
+    version_dict:dict[int | None,ListInVersionReturn] = {}
+    
+    # 首先按版本ID分组所有公告
+    bulletins_by_version :dict[int | None,list[BulletinDB] ] = {}
     for version, bulletin in results:
         if version.id not in version_dict:
             version_dict[version.id] = ListInVersionReturn(
                 id=version.id, acronyms=version.acronyms, list=[]
             )
+            bulletins_by_version[version.id] = []
         if bulletin:
-            version_dict[version.id].list.append(
+            bulletins_by_version[version.id].append(bulletin)
+    
+    # 对每个版本的公告按total_leng降序排序并计算排名
+    for version_id, bulletins in bulletins_by_version.items():
+        # 按total_leng降序排序
+        sorted_bulletins = sorted(bulletins, key=lambda b: b.total_leng, reverse=True)
+        
+        # 添加到结果中，并计算排名
+        for rank, bulletin in enumerate(sorted_bulletins, 1):
+            version_dict[version_id].list.append(
                 BaseBulletinInfo(
                     date=bulletin.bulletin_date,
-                    orderId=bulletin.rank_id,
+                    orderId=rank, 
                     totalLen=bulletin.total_leng,
                 )
             )
@@ -135,7 +148,6 @@ def new_bulletin(session: Session = Depends(get_session)) -> BulletinInfo:
     bulletin_info = BulletinInfo(
         id=bulletin_info.id,
         date=bulletin_info.bulletin_date,
-        orderId=bulletin_info.rank_id,
         order=order,
         name=bulletin_info.bulletin_name,
         contentTotalArr=content_arr,

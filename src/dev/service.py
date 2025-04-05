@@ -10,7 +10,6 @@ from sqlmodel import Session, select
 
 from constants import DEFAULT_FLODER_PATH_ABSOLUTE
 from src.bulletin.models import BulletinDB
-from src.bulletin.service import update_bulletin
 from src.bulletin_list.models import BulletinList
 from src.bulletin_list.schemas import BulletinType, DownloadBulletin
 from src.bulletin_list.service import get_bulletin_type
@@ -33,7 +32,6 @@ def test_resolve_notice(test_date : str | None =None) -> list[BulletinDB]:
             content_url: Path | None = download_notice(res)
             bulletin: BulletinDB | None = resolve_notice(content_path=content_url, bulletin_info = res)
             if bulletin is not None:
-                # update_bulletin(bulletin_info=bulletin)
                 res_list.append(bulletin)
         return res_list
                 
