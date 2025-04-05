@@ -33,14 +33,26 @@ async def lifespan(app: FastAPI):
     ml_models.clear()
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    lifespan=lifespan,
+    title="gjoldb API",
+    description="gjoldbAPI",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json"
+)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 允许所有来源
+    allow_origins=[
+        "https://gjoldb.info",
+        "https://www.gjoldb.info",
+        # 如果有其他需要访问API的前端域名，也可以添加在这里
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 app.include_router(bulletin_router, prefix="/bulletins", tags=["公告"])

@@ -164,4 +164,5 @@ pyrightconfig.json
 bulletins
 *.sh
 *.tar
+*.gz
 nginx.conf
