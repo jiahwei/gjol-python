@@ -68,7 +68,7 @@ def get_bulletin_list(url: str, latest_date: str | None = None) -> list[Download
 
     Args:
         url (str): 公告列表的URL
-        latest_date (str | None, optional): 数据库中最新一条公告的日期，用于过滤。默认为None。
+        latest_date (str | None, optional): 数据库中最新一条公告的日期 解析公告日期存在就返回比最新日期更新的公告。
 
     Returns:
         list[DownloadBulletin]: 需要下载的公告列表
@@ -83,15 +83,8 @@ def get_bulletin_list(url: str, latest_date: str | None = None) -> list[Download
             return []
             
         all_list = target_div.find_all("li")
-        res_list: list[DownloadBulletin] = []
-        
-        # 设置日期比较基准
-        reference_date: datetime = (
-            datetime.strptime(latest_date, "%Y-%m-%d") 
-            if latest_date is not None 
-            else datetime.min
-        )
-        
+        res_list: list[DownloadBulletin] = []        
+       
         for li in all_list:
             # 提取公告信息
             a_dom = li.a
@@ -111,11 +104,14 @@ def get_bulletin_list(url: str, latest_date: str | None = None) -> list[Download
             
             # 保存到数据库
             update_bulletin_list(info=bulletin_info)
-            
-            # 只返回比最新日期更新的公告
-            if current_date > reference_date or latest_date is None:
+
+            # 解析公告日期存在就返回比最新日期更新的公告
+            if latest_date is not None:
+                reference_date = datetime.strptime(latest_date, "%Y-%m-%d")
+                if current_date > reference_date:
+                    res_list.append(bulletin_info)
+            else:
                 res_list.append(bulletin_info)
-            
         return res_list
         
     except requests.RequestException as e:
@@ -126,17 +122,18 @@ def get_bulletin_list(url: str, latest_date: str | None = None) -> list[Download
         return []
 
 
-def download_bulletin_list(pageNum: int = 1) -> list[DownloadBulletin]:
+def download_bulletin_list(pageNum: int = 1,is_download_lastest:bool = True) -> list[DownloadBulletin]:
     """下载公告列表
 
     Args:
-        pageNum (int, optional): 下载几页公告. Defaults to 1.
+        pageNum (int, optional): 要下载的公告列表页数
+        is_download_lastest (bool, optional): 是否只下载最新的公告
 
     Returns:
         list[DownloadBulletin]: 公告列表
     """
     bulletin_list: list[DownloadBulletin] = []
-    first_date_str: str = get_latest_bulletin_list().date
+    first_date_str: str | None = get_latest_bulletin_list().date if is_download_lastest else None
     for i in range(pageNum):
         url: str = get_list_url(i)
         new_list: list[DownloadBulletin] = get_bulletin_list(url, first_date_str)

@@ -51,20 +51,16 @@ def download_reslease():
     return res_list
 
 
-def get_version_info_by_bulletin_date(
-    bulletin_date: str, total_leng: int
-) -> VersionInfo | None:
-    """根据公告日期和长度获取版本信息
+def get_version_id_by_date(bulletin_date: str) -> int:
+    """根据公告日期获取对应的版本ID
     
-    根据给定的公告日期查找对应的版本，并计算该公告在版本中的排名。
-    排名基于公告的总长度，长度越大排名越靠前。
+    根据给定的公告日期查找对应的版本。
     
     Args:
         bulletin_date (str): 公告的发布日期，格式为"YYYY-MM-DD"
-        total_leng (int): 公告的总长度（字符数）
     
     Returns:
-        VersionInfo | None: 包含版本ID和公告排名的对象，如果找不到对应版本则返回None
+        int: 对应的版本ID，如果找不到对应版本则返回999
     """
     try:
         with Session(engine) as session:
@@ -79,10 +75,31 @@ def get_version_info_by_bulletin_date(
             
             if result is None:
                 logger.warning(f"未找到日期 {bulletin_date} 对应的版本")
-                return None
+                return 999
 
-            version_id: int | None = result.id if result.id is not None else -1
+            version_id: int  = result.id if result.id is not None else 999
+            return version_id
             
+    except Exception as e:
+        logger.error(f"获取版本ID时发生错误: {str(e)}")
+        return 999
+
+
+def get_bulletin_rank(version_id: int, total_leng: int) -> int:
+    """计算公告在版本中的排名
+    
+    根据公告的总长度计算其在指定版本中的排名。
+    排名基于公告的总长度，长度越大排名越靠前。
+    
+    Args:
+        version_id (int): 版本ID
+        total_leng (int): 公告的总长度（字符数）
+    
+    Returns:
+        int: 公告在版本中的排名，如果版本下没有公告则返回1
+    """
+    try:
+        with Session(engine) as session:
             # 获取该版本下所有公告并按总长度排序
             statement_bulletin = (
                 select(BulletinDB)
@@ -94,7 +111,7 @@ def get_version_info_by_bulletin_date(
             # 如果没有公告，返回默认排名1
             if not bulletin_list_by_version_id:
                 logger.warning(f"版本ID {version_id} 下没有公告，返回默认排名1")
-                return VersionInfo(version_id=version_id, rank=1)
+                return 1
             
             # 计算当前公告的排名
             rank = 1
@@ -104,11 +121,11 @@ def get_version_info_by_bulletin_date(
                 rank += 1
             
             logger.debug(f"公告(长度:{total_leng})在版本ID {version_id} 中的排名为 {rank}")
-            return VersionInfo(version_id=version_id, rank=rank)
+            return rank
             
     except Exception as e:
-        logger.error(f"获取版本信息时发生错误: {str(e)}")
-        return None
+        logger.error(f"计算公告排名时发生错误: {str(e)}")
+        return 1
 
 
 def sort_version():
