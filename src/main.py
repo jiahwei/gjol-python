@@ -1,4 +1,5 @@
 import logging.config
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -32,24 +33,35 @@ async def lifespan(app: FastAPI):
     # scheduler.shutdown()
     ml_models.clear()
 
+ENV = os.getenv("ENV", "development")
+
+# 根据环境决定是否显示文档
+docs_url = None if ENV == "production" else "/docs"
+redoc_url = None if ENV == "production" else "/redoc"
+openapi_url = None if ENV == "production" else "/openapi.json"
 
 app = FastAPI(
     lifespan=lifespan,
     title="gjoldb API",
     description="gjoldbAPI",
     version="1.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
-    openapi_url="/openapi.json"
+    docs_url=docs_url,
+    redoc_url=redoc_url,
+    openapi_url=openapi_url
 )
+
+# 根据环境配置CORS
+if ENV == "production":
+    origins = [
+        "https://gjoldb.info",
+        "https://www.gjoldb.info",
+    ]
+else:
+    origins = ["*"]  # 开发环境允许所有来源
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://gjoldb.info",
-        "https://www.gjoldb.info",
-        # 如果有其他需要访问API的前端域名，也可以添加在这里
-    ],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["Content-Type", "Authorization"],

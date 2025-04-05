@@ -23,4 +23,7 @@ RUN mkdir -p /code/src/logs
 # 设置权限
 RUN chmod -R 755 /code
 
+# 设置生产环境变量
+ENV ENV=production
+
 CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--root-path", "/api"]
