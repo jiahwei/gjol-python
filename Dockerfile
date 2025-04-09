@@ -2,6 +2,9 @@ FROM python:3.11.8 AS gjol
 
 WORKDIR /code
 
+#设置时区
+ENV TZ=Asia/Shanghai
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 # 创建预留的文件夹
 RUN mkdir -p /code/bulletins /code/bulletins/routine /code/bulletins/skill /code/bulletins/version
 
