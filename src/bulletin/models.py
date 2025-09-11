@@ -3,6 +3,7 @@
 该模块定义了公告相关的数据模型
 
 """
+
 from sqlmodel import Field, SQLModel
 
 from src.bulletin_list.schemas import BulletinType
@@ -22,7 +23,8 @@ class BulletinDB(SQLModel, table=True):
         version_id: 版本id
         type: 公告类型
     """
-    __tablename__:str = "bulletin"
+
+    __tablename__: str = "bulletin"
     id: int | None = Field(default=None, primary_key=True)
     bulletin_date: str
     original_date: str
@@ -31,5 +33,3 @@ class BulletinDB(SQLModel, table=True):
     bulletin_name: str | None = None
     version_id: int = Field(foreign_key="version.id")
     type: str = Field(default=BulletinType.ROUTINE.value)
-
-

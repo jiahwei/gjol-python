@@ -27,4 +27,4 @@ class Version(SQLModel, table=True):
     end_date: str
     total: int
     acronyms: str
-    fake_version:bool=Field(default=False)
+    fake_version: int = Field(default=0)

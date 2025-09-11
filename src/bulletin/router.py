@@ -77,10 +77,10 @@ def list_in_version(
     """
     statement = select(Version, BulletinDB).where(BulletinDB.version_id == Version.id)
     results = session.exec(statement).all()
-    version_dict:dict[int | None,ListInVersionReturn] = {}
-    
+    version_dict: dict[int | None, ListInVersionReturn] = {}
+
     # 首先按版本ID分组所有公告
-    bulletins_by_version :dict[int | None,list[BulletinDB] ] = {}
+    bulletins_by_version: dict[int | None, list[BulletinDB]] = {}
     for version, bulletin in results:
         if version.id not in version_dict:
             version_dict[version.id] = ListInVersionReturn(
@@ -89,18 +89,21 @@ def list_in_version(
             bulletins_by_version[version.id] = []
         if bulletin:
             bulletins_by_version[version.id].append(bulletin)
-    
+
     # 对每个版本的公告按total_leng降序排序并计算排名
     for version_id, bulletins in bulletins_by_version.items():
         # 按total_leng降序排序
         sorted_bulletins = sorted(bulletins, key=lambda b: b.total_leng, reverse=True)
-        
+
+        version_dict[version_id].total_version_len = sum(
+            item.total_leng for item in bulletins
+        )
         # 添加到结果中，并计算排名
         for rank, bulletin in enumerate(sorted_bulletins, 1):
             version_dict[version_id].list.append(
                 BaseBulletinInfo(
                     date=bulletin.bulletin_date,
-                    orderId=rank, 
+                    orderId=rank,
                     totalLen=bulletin.total_leng,
                 )
             )
@@ -128,27 +131,33 @@ def new_bulletin(session: Session = Depends(get_session)) -> BulletinInfo:
         raise HTTPException(status_code=404, detail="未找到公告")
     bulletin_info, version_info = result
 
-    statement_bulletin = (
-        select(BulletinDB)
-        .where(BulletinDB.version_id == bulletin_info.version_id)
-        .order_by(desc(BulletinDB.total_leng))
+    # 获取同版本下的所有公告，用于计算排名
+    statement_all_bulletins = select(BulletinDB).where(
+        BulletinDB.version_id == bulletin_info.version_id
     )
-    bulletin_list_by_version_id = session.exec(statement_bulletin).all()
-    # 查找当前公告在列表中的位置
+    all_bulletins = session.exec(statement_all_bulletins).all()
+
+    # 按字数排序（降序）并计算排名
+    bulletins_by_length = sorted(
+        all_bulletins, key=lambda x: x.total_leng, reverse=True
+    )
     order = next(
         (
             index
-            for index, bulletin in enumerate(bulletin_list_by_version_id)
+            for index, bulletin in enumerate(bulletins_by_length)
             if bulletin.id == bulletin_info.id
         ),
         -1,
     )
+
     content_arr = json.loads(bulletin_info.content_total_arr)
+
     # 构建返回的公告信息
     bulletin_info = BulletinInfo(
         id=bulletin_info.id,
         date=bulletin_info.bulletin_date,
         order=order,
+        order_by_date=len(all_bulletins),
         name=bulletin_info.bulletin_name,
         contentTotalArr=content_arr,
         versionId=version_info.id,
