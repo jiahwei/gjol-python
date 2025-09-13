@@ -70,6 +70,9 @@ def predict_paragraph_category(paragraph_text: str) -> str:
     返回:
         str: 预测的段落类别。
     """
+    # "无更新" 模式训练量太小，直接判断返回
+    if "无更新" in paragraph_text:
+        return "无更新"
     # 转换为特征向量
     x_new = vectorizer.transform([paragraph_text])
     # 进行预测

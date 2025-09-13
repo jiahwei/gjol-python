@@ -3,7 +3,9 @@
 """
 from pathlib import Path
 from fastapi import APIRouter, Query
+from sqlmodel import Session, select
 
+from src.database import engine
 from src.bulletin.models import BulletinDB
 from src.dev.service import test_resolve_notice
 from src.nlp.train_model import train_model
@@ -65,19 +67,3 @@ def fix_all_bulletin(page_num: int = Query(1, alias="pageNum")):
         return {"message": "测试成功"}
     except Exception as e:
         return {"message": "测试失败", "error": str(e)}
-
-
-@router.get("/updateAllBulletin")
-def update_all_bulletin():
-    """更新所有公告"""
-
-    with Session(engine) as session:
-        statement = select(BulletinList)
-        bulletin_list:List[BulletinList] = session.exec(statement).all()
-        for bulletin in bulletin_list:
-            content_url: Path | None = download_notice(bulletin)
-            bulletin: BulletinDB | None  = resolve_notice(content_path=content_url, bulletin_info = bulletin)
-            if bulletin:
-                update_bulletin(bulletin_info=bulletin)
-            return {"message": "测试成功"}
-

@@ -58,22 +58,29 @@ def download_notice(bulletin_info: DownloadBulletin | BulletinList ) -> Path | N
         # 该公告已经下载过
         # logger.info(f"{bulletin_info.name},已经下载过了,{time.ctime()}")
         return parent_path.joinpath("content.html")
-    logger.info(f"{bulletin_info.name},{bulletin_info.date},未处理？")
+    logger.info("%s,%s,未处理？", bulletin_info.name, bulletin_info.date)
     sleeptime = random.randint(5, 20)
     parent_path.mkdir()
     # 下载公告，保存为source.html
-    logger.info(f"{bulletin_info.name},下载公告,{time.ctime()}")
+    logger.info("%s,下载公告,%s", bulletin_info.name, time.ctime())
     print(f"{bulletin_info.name},下载公告,{time.ctime()}")
     url = bulletin_info.href.replace("/z/../", BASEURL)
-    res = requests.get(url, headers=header).text
+    try:
+        res = requests.get(url, headers=header, timeout=30).text
+    except requests.Timeout:
+        logger.error("请求超时: %s", url)
+        raise
+    except requests.RequestException as e:
+        logger.error("请求失败: %s, 错误: %s", url, str(e))
+        raise
     soup = BeautifulSoup(res, "lxml")
 
     source_file_name = parent_path.joinpath("source.html")
     _ = source_file_name.write_text(str(soup), encoding="utf-8")
 
     # 过滤不需要的标签,生成content.html
-    for excludedDivName in ["more_button", "bdsharebuttonbox"]:
-        excluded_div = soup.find("div", {"class": excludedDivName})
+    for excluded_div_name in ["more_button", "bdsharebuttonbox"]:
+        excluded_div = soup.find("div", {"class": excluded_div_name})
         if excluded_div is not None:
             _ = excluded_div.extract()
     excluded_tags = soup.select("script")
@@ -83,7 +90,7 @@ def download_notice(bulletin_info: DownloadBulletin | BulletinList ) -> Path | N
     content_file_name = parent_path.joinpath("content.html")
     _ = content_file_name.write_text(str(details), encoding="utf-8")
 
-    logger.info(f"{time.ctime()}:{bulletin_info.name}下载完成,等待{sleeptime}秒")
+    logger.info("%s:%s下载完成,等待%s秒", time.ctime(), bulletin_info.name, sleeptime)
     print(f"{time.ctime()}:{bulletin_info.name}下载完成,等待{sleeptime}秒")
     time.sleep(sleeptime)
 
@@ -102,62 +109,62 @@ def resolve_notice(
 
     Returns:
         BulletinDB | None: 解析后的公告对象，如果解析失败则返回None
-    """    
+    """
     if content_path is None:
-        logger.warning(f"公告 {bulletin_info.name} 的content_path为None，无法解析")
+        logger.warning("公告 %s 的content_path为None，无法解析", bulletin_info.name)
         return None
-    
+
     try:
         # 获取基础公告信息
         base_bulletin: BulletinDB = query_bulletin(bulletin_info=bulletin_info)
-        
+
         # 读取并解析HTML内容
         content: str = content_path.read_text(encoding="utf-8")
         soup: BeautifulSoup = BeautifulSoup(content, "html5lib")
         details_div = soup.find("div", class_="details")
-        
+
         if not isinstance(details_div, Tag):
-            logger.warning(f"公告 {bulletin_info.name} 的details_div为空，规则失效")
+            logger.warning("公告 %s 的details_div为空，规则失效", bulletin_info.name)
             return base_bulletin
-            
+
         # 提取所有段落
         paragraphs = details_div.find_all("p")
         if not paragraphs:
-            logger.warning(f"公告 {bulletin_info.name} 未找到段落内容")
+            logger.warning("公告 %s 未找到段落内容", bulletin_info.name)
             return base_bulletin
-            
+
         # 按类型分组段落
         category_contents: dict[str, list[str]] = {}  # 类型 -> 内容列表
         category_lengths: dict[str, int] = {}   # 类型 -> 总长度
-        
+
         # 处理每个段落
         for p in paragraphs:
             p_text:str = p.text.strip()
             if not p_text:
                 continue
-                
+
             words = preprocess_text(p_text)
             if words.strip():
                 category = predict_paragraph_category(words)
-                logger.debug(f"段落分类: {p_text[:30]}... -> {category}")
-                
+                logger.debug("段落分类: %s... -> %s", p_text[:30], category)
+
                 # 将段落添加到对应类型
                 if category not in category_contents:
                     category_contents[category] = []
                     category_lengths[category] = 0
-                
+
                 category_contents[category].append(p_text)
                 category_lengths[category] += len(p_text)
-        
+
         # 如果没有有效内容，返回基础公告
         if not category_contents:
-            logger.warning(f"公告 {bulletin_info.name} 没有有效内容可分类")
+            logger.warning("公告 %s 没有有效内容可分类",bulletin_info.name)
             return base_bulletin
-        
+
         # 构建内容数组
         content_total_arr: list[ContentTotal] = []
         total_leng: int = 0
-        
+
         for category, contents in category_contents.items():
             content_item = ContentTotal(
                 type=ParagraphTopic(category),
@@ -166,17 +173,17 @@ def resolve_notice(
             )
             total_leng += category_lengths[category]
             content_total_arr.append(content_item)
-        
+
         # 更新公告信息
         content_total_json = json.dumps([item.model_dump() for item in content_total_arr], ensure_ascii=False)
         base_bulletin.content_total_arr = content_total_json
         base_bulletin.total_leng = total_leng
-        
-        logger.info(f"公告 {bulletin_info.name} 解析完成，共 {len(content_total_arr)} 种类型，总长度 {total_leng}")
+
+        logger.info("公告 %s 解析完成，共 %d 种类型，总长度 %d", bulletin_info.name, len(content_total_arr), total_leng)
         return base_bulletin
-        
+
     except Exception as e:
-        logger.error(f"解析公告 {bulletin_info.name} 时发生错误: {str(e)}")
+        logger.error("解析公告 %s 时发生错误: %s", bulletin_info.name, str(e))
         return None
 
 

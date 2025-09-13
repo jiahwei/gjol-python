@@ -35,7 +35,7 @@ def query_bulletin(bulletin_info: DownloadBulletin | BulletinList) -> BulletinDB
 
     Returns:
         BulletinDB: 数据库中已存在的公告或新创建的公告对象
-    """    
+    """
     with Session(engine) as session:
         statement = select(BulletinDB).where(
             BulletinDB.original_date == bulletin_info.date
@@ -79,8 +79,10 @@ def update_bulletin(bulletin_info: BulletinDB) -> None:
                 # 更新字段
                 bulletin.content_total_arr = bulletin_info.content_total_arr
                 bulletin.total_leng = bulletin_info.total_leng
-                rank:int = get_bulletin_rank(version_id = bulletin_info.version_id,total_leng= bulletin_info.total_leng)
-                bulletin.rank_id = rank
+                # rank:int = get_bulletin_rank(version_id = bulletin_info.version_id,total_leng= bulletin_info.total_leng)
+                # bulletin.rank_id = rank
                 session.add(bulletin)
                 session.commit()
                 session.refresh(bulletin)
+
+# def update_bulletin_content(bulletin_info: BulletinDB) -> None:
