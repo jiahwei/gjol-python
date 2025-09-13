@@ -10,11 +10,10 @@ nlp_test_path: Path = Path("src/logs/nlp_test.log")
 spiders_test_path: Path = Path("src/logs/spiders_test.log")
 spiders_history_path: Path = Path("src/logs/spiders_history.log")
 daily_path: Path = Path("src/logs/daily.log")
-train_path:Path = Path("src/logs/train.log") 
-# 如果需要更多模块，继续添加路径
+train_path:Path = Path("src/logs/train.log")
 
 # 确保所有日志文件存在
-for log_file in [common_log_path, nlp_test_path, spiders_test_path, 
+for log_file in [common_log_path, nlp_test_path, spiders_test_path,
                 spiders_history_path, daily_path, train_path]:
     if not log_file.exists():
         log_file.touch()
@@ -106,7 +105,7 @@ LOGGING_CONFIG = {
             "handlers": ["train_handler"],
             "level": "DEBUG",
             "propagate": False,
-        },        
+        },
         # 为更多模块添加日志器
     },
     "root": {

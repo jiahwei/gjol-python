@@ -1,12 +1,15 @@
-from fastapi import APIRouter, Query
+"""
+开发中，触发某些操作的方法
+"""
 from pathlib import Path
-
+from fastapi import APIRouter, Query
 
 from src.bulletin.models import BulletinDB
 from src.dev.service import test_resolve_notice
 from src.nlp.train_model import train_model
 from src.version.service import fix_bulletin_ranks
 from src.bulletin.service import update_bulletin
+from src.bulletin_list.models import BulletinList
 from src.bulletin_list.schemas import DownloadBulletin
 from src.bulletin_list.service import download_bulletin_list
 from src.spiders.service import download_notice, resolve_notice
@@ -50,10 +53,10 @@ def test_bulletin_ranks(version_id:int):
 
 
 @router.get("/fixAllBulletin")
-def fix_all_bulletin(pageNumint:int):
+def fix_all_bulletin(page_num: int = Query(1, alias="pageNum")):
     """补全全部公告"""
     try:
-        bulletin_list: list[DownloadBulletin] = download_bulletin_list(pageNumint,False)
+        bulletin_list: list[DownloadBulletin] = download_bulletin_list(page_num,False)
         for bulletin_info in bulletin_list:
             content_url: Path | None = download_notice(bulletin_info)
             bulletin: BulletinDB | None  = resolve_notice(content_path=content_url, bulletin_info = bulletin_info)
@@ -62,3 +65,19 @@ def fix_all_bulletin(pageNumint:int):
         return {"message": "测试成功"}
     except Exception as e:
         return {"message": "测试失败", "error": str(e)}
+
+
+@router.get("/updateAllBulletin")
+def update_all_bulletin():
+    """更新所有公告"""
+
+    with Session(engine) as session:
+        statement = select(BulletinList)
+        bulletin_list:List[BulletinList] = session.exec(statement).all()
+        for bulletin in bulletin_list:
+            content_url: Path | None = download_notice(bulletin)
+            bulletin: BulletinDB | None  = resolve_notice(content_path=content_url, bulletin_info = bulletin)
+            if bulletin:
+                update_bulletin(bulletin_info=bulletin)
+            return {"message": "测试成功"}
+

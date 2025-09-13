@@ -1,5 +1,4 @@
 """ 生成训练用数据
-该脚本定义了一个函数 `make_train_csv`，用于生成用于训练的CSV文件。
 """
 import csv
 import logging
@@ -20,6 +19,8 @@ logger = logging.getLogger('nlp_test')
 
 
 def make_train_csv():
+    """生成训练用数据
+    """
     with Session(engine) as session:
         statement = select(BulletinList).where(BulletinList.type != 'circular')
         buletin_list = session.exec(statement).all()
@@ -30,7 +31,7 @@ def make_train_csv():
                 if content_url is None:
                     print("content_url None")
                     continue
-                logger.info(f"处理{content_url}",)
+                logger.info("处理%s", content_url)
                 content = content_url.read_text(encoding="utf-8")
                 soup = BeautifulSoup(content, "html5lib")
                 details_div = soup.find("div", class_="details")

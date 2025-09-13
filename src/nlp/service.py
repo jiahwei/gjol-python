@@ -46,6 +46,12 @@ def preprocess_text(text: str) -> str:
 
 
 def load_stopwords() -> set[str]:
+    """
+    从文件中加载停用词。
+
+    返回:
+        set[str]: 包含停用词的集合。
+    """
     stopwords = set()
     stopwords_path = Path("src/nlp/cn_stopwords.txt")
     with open(stopwords_path, "r", encoding="utf-8") as f:
@@ -55,10 +61,19 @@ def load_stopwords() -> set[str]:
 
 
 def predict_paragraph_category(paragraph_text: str) -> str:
+    """
+    预测段落的类别。
+
+    参数:
+        paragraph_text (str): 要预测的段落文本。
+
+    返回:
+        str: 预测的段落类别。
+    """
     # 转换为特征向量
-    X_new = vectorizer.transform([paragraph_text])
+    x_new = vectorizer.transform([paragraph_text])
     # 进行预测
-    prediction = model.predict(X_new)
+    prediction = model.predict(x_new)
     # 解码标签
     label = label_encoder.inverse_transform(prediction)
     return label[0]
