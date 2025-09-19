@@ -55,8 +55,18 @@ class BulletinInfo(BaseBulletinInfo):
 
 
 class ListInVersionReturn(BaseModel):
+    """listInVersion 接口的返回参数
+
+    Args:
+        id (int | None): 版本ID
+        acronyms (str): 版本名称
+        date (str): 版本日期
+        total_version_len (int, optional): 版本总长度. Defaults to 0.
+        list (list[BaseBulletinInfo], optional): 公告列表. Defaults to [].
+    """
     id: int | None
     acronyms: str
+    date: str
     total_version_len: int = Field(0, alias="totalVersionLen")
     list: list[BaseBulletinInfo]
 

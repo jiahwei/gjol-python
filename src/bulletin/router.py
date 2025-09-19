@@ -83,17 +83,17 @@ def list_in_version(
     bulletins_by_version: dict[int | None, list[BulletinDB]] = {}
     for version, bulletin in results:
         if version.id not in version_dict:
+            date = version.start_date if version.start_date else version.end_date
             version_dict[version.id] = ListInVersionReturn(
-                id=version.id, acronyms=version.acronyms, list=[]
+                id=version.id, acronyms=version.acronyms, list=[], date=str(date)
             )
             bulletins_by_version[version.id] = []
         if bulletin:
             bulletins_by_version[version.id].append(bulletin)
 
-    # 对每个版本的公告按total_leng降序排序并计算排名
+    # 对每个版本的公告按时间排序
     for version_id, bulletins in bulletins_by_version.items():
-        # 按total_leng降序排序
-        sorted_bulletins = sorted(bulletins, key=lambda b: b.total_leng, reverse=True)
+        sorted_bulletins = sorted(bulletins, key=lambda b: b.bulletin_date, reverse=False)
 
         version_dict[version_id].total_version_len = sum(
             item.total_leng for item in bulletins
