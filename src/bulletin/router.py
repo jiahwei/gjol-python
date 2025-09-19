@@ -83,9 +83,10 @@ def list_in_version(
     bulletins_by_version: dict[int | None, list[BulletinDB]] = {}
     for version, bulletin in results:
         if version.id not in version_dict:
-            date = version.start_date if version.start_date else version.end_date
+            start_date = version.start_date if version.start_date else ''
+            end_date = version.end_date if version.end_date else ''
             version_dict[version.id] = ListInVersionReturn(
-                id=version.id, acronyms=version.acronyms, list=[], date=str(date)
+                id=version.id, acronyms=version.acronyms, list=[], start=start_date, end=end_date
             )
             bulletins_by_version[version.id] = []
         if bulletin:

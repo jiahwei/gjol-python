@@ -64,9 +64,11 @@ class ListInVersionReturn(BaseModel):
         total_version_len (int, optional): 版本总长度. Defaults to 0.
         list (list[BaseBulletinInfo], optional): 公告列表. Defaults to [].
     """
+
     id: int | None
     acronyms: str
-    date: str
+    start: str
+    end: str
     total_version_len: int = Field(0, alias="totalVersionLen")
     list: list[BaseBulletinInfo]
 

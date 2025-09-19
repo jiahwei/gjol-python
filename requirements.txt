@@ -39,7 +39,7 @@ sklearn-compat==0.1.3
 sniffio==1.3.0
 soupsieve==2.5
 SQLAlchemy==2.0.34
-sqlmodel==0.0.22
+sqlmodel==0.0.25
 starlette==0.37.2
 threadpoolctl==3.5.0
 thulac==0.2.2
