@@ -3,15 +3,12 @@
 """
 from pathlib import Path
 from fastapi import APIRouter, Query
-from sqlmodel import Session, select
 
-from src.database import engine
 from src.bulletin.models import BulletinDB
 from src.dev.service import test_resolve_notice
 from src.nlp.train_model import train_model
 from src.version.service import fix_bulletin_ranks
 from src.bulletin.service import update_bulletin
-from src.bulletin_list.models import BulletinList
 from src.bulletin_list.schemas import DownloadBulletin
 from src.bulletin_list.service import download_bulletin_list
 from src.spiders.service import download_notice, resolve_notice

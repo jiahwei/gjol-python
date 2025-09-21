@@ -1,14 +1,9 @@
 """公告列表模块的方法
 该模块提供了公告列表相关的方法，包括获取公告列表、下载公告列表、更新公告列表等功能。
 """
-from bs4.element import NavigableString, Tag
-
-
-import random
+from datetime import datetime, timedelta
 import re
-import time
-from datetime import date, datetime, timedelta
-
+from bs4.element import NavigableString, Tag
 import requests
 from bs4 import BeautifulSoup
 from sqlmodel import Session, and_, desc, select
