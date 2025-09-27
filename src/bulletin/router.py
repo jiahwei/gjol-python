@@ -10,10 +10,10 @@ from sqlmodel import Session, and_, desc, select
 
 from src.bulletin.models import BulletinDB
 from src.bulletin.schemas import (
-    BaseBulletinInfo,
     BulletinInfo,
     DatePayload,
     ListInVersionReturn,
+    BulletinInVersion
 )
 from src.database import get_session
 from src.version.models import Version
@@ -102,10 +102,11 @@ def list_in_version(
         # 添加到结果中，并计算排名
         for rank, bulletin in enumerate(sorted_bulletins, 1):
             version_dict[version_id].list.append(
-                BaseBulletinInfo(
+                BulletinInVersion(
                     date=bulletin.bulletin_date,
                     orderId=rank,
                     totalLen=bulletin.total_leng,
+                    type=bulletin.content_total_arr,
                 )
             )
 

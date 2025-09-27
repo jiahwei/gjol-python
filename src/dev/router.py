@@ -1,5 +1,4 @@
-"""
-开发中，触发某些操作的方法
+"""开发测试模块中的通用方法
 """
 from pathlib import Path
 from fastapi import APIRouter, Query

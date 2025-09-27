@@ -12,17 +12,32 @@ from src.bulletin_list.schemas import BulletinType
 
 
 class DatePayload(BaseModel):
+    """接口“bulletins/byDate”的入参类型
+
+    Args:
+        BaseModel (_type_): _description_
+    """
     start_date: date | None = Field(None, alias="startDate")
     end_date: date | None = Field(None, alias="endDate")
 
 
 class BaseBulletinInfo(BaseModel):
+    """公告基本信息
+
+    Args:
+        BaseModel (_type_): _description_
+    """
     date: str = ""
     orderId: int = 0
     totalLen: int = 0
 
 
 class ParagraphTopic(Enum):
+    """公告段落的分类标准
+
+    Args:
+        Enum (_type_): _description_
+    """
     START = "开头"
     END = "署名/结尾"
     UNUPDATE = "无更新"
@@ -35,15 +50,30 @@ class ParagraphTopic(Enum):
 
 
 class ContentTotal(BaseModel):
+    """接口“bulletins/byDate”的返回参数中content_total_arr的类型
+
+    Args:
+        BaseModel (_type_): _description_
+    """
     type: ParagraphTopic
     leng: int
     content: list[str]
 
     class Config:
+        """配置类，用于设置 Pydantic 模型的行为，这里使用枚举的 实际值 而不是枚举的 名称
+
+        Args:
+            BaseModel (_type_): _description_
+        """
         use_enum_values: bool = True
 
 
 class BulletinInfo(BaseBulletinInfo):
+    """接口“bulletins/byDate”的返回参数
+
+    Args:
+        BaseBulletinInfo (_type_): _description_
+    """
     id: int | None
     name: str | None
     order: int
@@ -53,9 +83,17 @@ class BulletinInfo(BaseBulletinInfo):
     version_name: str | None = Field(None, alias="versionName")
     type: str = Field(default=BulletinType.ROUTINE)
 
+class BulletinInVersion(BaseBulletinInfo):
+    """接口“bulletins/listInVersion”的返回参数中公告的类型
+
+    Args:
+        BaseBulletinInfo (_type_): _description_
+    """
+    type: str
+
 
 class ListInVersionReturn(BaseModel):
-    """listInVersion 接口的返回参数
+    """接口“bulletins/listInVersion”的返回参数
 
     Args:
         id (int | None): 版本ID
@@ -70,16 +108,16 @@ class ListInVersionReturn(BaseModel):
     start: str
     end: str
     total_version_len: int = Field(0, alias="totalVersionLen")
-    list: list[BaseBulletinInfo]
+    list: list[BulletinInVersion]
 
 
-class bulletinAllInfo(BaseModel):
-    id: int
-    total_len: int
-    name: str
-    authors: str
-    version_id: int
-    order: int
+# class bulletinAllInfo(BaseModel):
+#     id: int
+#     total_len: int
+#     name: str
+#     authors: str
+#     version_id: int
+#     order: int
 
-    class Config:
-        from_attributes: bool = True
+#     class Config:
+#         from_attributes: bool = True

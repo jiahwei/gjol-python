@@ -2,10 +2,9 @@
 该模块提供了公告列表相关的方法，包括获取公告列表、下载公告列表、更新公告列表等功能。
 """
 from datetime import datetime, timedelta
-import re
+from bs4 import BeautifulSoup
 from bs4.element import NavigableString, Tag
 import requests
-from bs4 import BeautifulSoup
 from sqlmodel import Session, and_, desc, select
 
 from src.bulletin_list.models import BulletinList
@@ -13,7 +12,10 @@ from src.bulletin_list.schemas import BulletinType, DownloadBulletin
 from src.database import engine
 
 header = {
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36 Edg/117.0.2045.31"
+    "User-Agent": (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36 Edg/117.0.2045.31"
+    )
 }
 
 def get_latest_bulletin_list() -> BulletinList:
@@ -178,15 +180,6 @@ def update_bulletin_list(info: DownloadBulletin):
             # 数据已存在，不执行任何操作
             print(f"数据已存在，不执行插入: {info.name}")
 
-def get_bulletin_date(bulletin_info: DownloadBulletin | BulletinList) -> str:
-    year_month = bulletin_info.date[:-3]
-    match = re.search(r"(\d+)月(\d+)日", bulletin_info.name)
-    day = "01" if match is None else match.group(2)
-    date = f"{year_month}-{day}"
-    resolve_date = datetime.strptime(date, '%Y-%m-%d').strftime('%Y-%m-%d')
-    return resolve_date
-
-
 def get_bulletin_type(bulletin_name: str) -> BulletinType:
     """返回公告类型
 
@@ -198,7 +191,8 @@ def get_bulletin_type(bulletin_name: str) -> BulletinType:
     """
     if ("职业" in bulletin_name or "技能" in bulletin_name) and '《古剑奇谭网络版》' in bulletin_name:
         return BulletinType.SKILL
-    if ("资料片" in bulletin_name or "版本" in bulletin_name) and '更新' in bulletin_name and '公告' in bulletin_name:
+    if (("资料片" in bulletin_name or "版本" in bulletin_name)
+            and '更新' in bulletin_name and '公告' in bulletin_name):
         return BulletinType.VERSION
     if "更新维护公告" in bulletin_name:
         return BulletinType.ROUTINE

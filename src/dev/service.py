@@ -1,9 +1,11 @@
+"""开发测试模块中的通用方法
+"""
 import logging
 import os
 import re
 from datetime import datetime
 from pathlib import Path
-from collections.abc import Sequence 
+from collections.abc import Sequence
 
 from bs4 import BeautifulSoup, Tag
 from sqlmodel import Session, select
@@ -20,6 +22,14 @@ logger = logging.getLogger("nlp_test")
 daily_logger = logging.getLogger("daily")
 
 def test_resolve_notice(test_date : str | None =None) -> list[BulletinDB]:
+    """下载公告并处理公告数据，有输入日期则测试该日期，没有则测试全部公告
+
+    Args:
+        test_date (str | None, optional): 测试日期. Defaults to None.
+
+    Returns:
+        list[BulletinDB]: 解析后的公告列表
+    """
     with Session(engine) as session:
         statement = (
             select(BulletinList)
@@ -30,11 +40,14 @@ def test_resolve_notice(test_date : str | None =None) -> list[BulletinDB]:
         res_list: list[BulletinDB] = []
         for res in buletin_list:
             content_url: Path | None = download_notice(res)
-            bulletin: BulletinDB | None = resolve_notice(content_path=content_url, bulletin_info = res)
+            bulletin: BulletinDB | None = resolve_notice(
+                content_path=content_url,
+                bulletin_info=res
+            )
             if bulletin is not None:
                 res_list.append(bulletin)
         return res_list
-                
+
 
 
 def bulletin_type():
@@ -61,20 +74,20 @@ def resolve_file():
             soup = BeautifulSoup(content, "html5lib")
             title_tag = soup.title
             if isinstance(title_tag, Tag):
-                type = get_bulletin_type(title_tag.text)
-                if type in {BulletinType.ROUTINE}:
-                    logger.info(f"{title_tag.text},{root}")
+                current_bulletin_type = get_bulletin_type(title_tag.text)
+                if current_bulletin_type in {BulletinType.ROUTINE}:
+                    logger.info("%s，%s", current_bulletin_type.value, root)
                 else:
-                    logger.info(f"{title_tag.text},type:{type.value}")
+                    logger.info("%s,type:%s", title_tag.text, current_bulletin_type.value)
                     # dst_path = recycle_bin_path.joinpath(type.value)
                     # logger.info(Path(root))
                     # logger.info(dst_path)
                     # shutil.move(Path(root), dst_path)
             else:
-                logger.error(f"roots,{root}, error")
-            # logger.info(f"roots,{root}")
-            # logger.info(f"dirs,{dirs}")
-            # logger.info(f"files,{files}")
+                logger.error("roots,%s, error", root)
+            # logger.info("roots,%s", root)
+            # logger.info("dirs,%s", dirs)
+            # logger.info("files,%s", files)
 
 
 def rename_file(type:str="routine"):
@@ -92,7 +105,7 @@ def rename_file(type:str="routine"):
                 date_pattern_root = r"\d{4}-\d{2}-\d{2}"
                 match = re.search(date_pattern_root, root.__str__())
                 if match is None:
-                    logger.info(f"root{date_pattern_root},{root}")
+                    logger.info("root %s, %s", date_pattern_root, root)
                     return
                 root_date = match.group()
                 date_obj = datetime.strptime(root_date, "%Y-%m-%d")
@@ -101,7 +114,7 @@ def rename_file(type:str="routine"):
                 )
                 new_date = new_date_obj.strftime("%Y-%m-%d")
                 # if root_date != new_date:
-                #     logger.info(f"old - {root_date},new - {new_date}")
+                #     logger.info("old - %s,new - %s", root_date, new_date)
                     # new_root = Path(root).with_name(new_date)
                     # root_path = Path(root)
                     # root_path.rename(new_root)
