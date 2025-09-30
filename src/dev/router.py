@@ -1,4 +1,4 @@
-"""开发测试模块中的通用方法
+"""开发中执行某些任务的接口
 """
 from pathlib import Path
 from fastapi import APIRouter, Query
@@ -52,7 +52,10 @@ def test_bulletin_ranks(version_id:int):
 
 @router.get("/fixAllBulletin")
 def fix_all_bulletin(page_num: int = Query(1, alias="pageNum")):
-    """补全全部公告"""
+    """补全全部公告
+    Args:
+        page_num (int, optional): 要下载的公告页号. Defaults to 1.目前最大76页
+    """
     try:
         bulletin_list: list[DownloadBulletin] = download_bulletin_list(page_num,False)
         for bulletin_info in bulletin_list:
