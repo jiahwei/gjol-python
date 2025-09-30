@@ -38,15 +38,14 @@ class ParagraphTopic(Enum):
     Args:
         Enum (_type_): _description_
     """
-    START = "开头"
-    END = "署名/结尾"
+    FORMAT = "格式"
     UNUPDATE = "无更新"
-    STORE = "商城/外观"
-    NOMAL = "通用调整"
+    STORE = "商城"
     SKILL = "职业调整"
-    PVP = "斗法调整"
-    RAID = "秘境调整"
-    EVENT = "活动更新"
+    SYSTEM = "通用调整"
+    PVP = "PVP"
+    PVE = "PVE"
+    PVX = "PVX"
 
 
 class ContentTotal(BaseModel):
