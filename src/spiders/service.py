@@ -1,10 +1,11 @@
-""" 爬虫服务模块
+"""爬虫服务模块
 该模块提供了爬虫服务的相关函数和类。
 主要功能包括：
 - 下载公告
 - 解析公告内容并分类段落
 - 检查公告是否已下载
 """
+
 import json
 import logging
 import random
@@ -14,7 +15,7 @@ from pathlib import Path
 import requests
 from bs4 import BeautifulSoup, Tag
 
-from constants import (BASEURL, DEFAULT_FLODER_PATH_ABSOLUTE)
+from constants import BASEURL, DEFAULT_FLODER_PATH_ABSOLUTE
 from src.bulletin.models import BulletinDB
 from src.bulletin.schemas import ContentTotal, ParagraphTopic
 from src.bulletin.service import query_bulletin
@@ -31,7 +32,7 @@ header = {
 }
 
 
-def download_notice(bulletin_info: DownloadBulletin | BulletinList ) -> Path | None:
+def download_notice(bulletin_info: DownloadBulletin | BulletinList) -> Path | None:
     """下载公告
 
     Args:
@@ -97,7 +98,6 @@ def download_notice(bulletin_info: DownloadBulletin | BulletinList ) -> Path | N
     return content_file_name
 
 
-
 def resolve_notice(
     content_path: Path | None, bulletin_info: DownloadBulletin | BulletinList
 ) -> BulletinDB | None:
@@ -135,11 +135,11 @@ def resolve_notice(
 
         # 按类型分组段落
         category_contents: dict[str, list[str]] = {}  # 类型 -> 内容列表
-        category_lengths: dict[str, int] = {}   # 类型 -> 总长度
+        category_lengths: dict[str, int] = {}  # 类型 -> 总长度
 
         # 处理每个段落
         for p in paragraphs:
-            p_text:str = p.text.strip()
+            p_text: str = p.text.strip()
             if not p_text:
                 continue
 
@@ -158,7 +158,7 @@ def resolve_notice(
 
         # 如果没有有效内容，返回基础公告
         if not category_contents:
-            logger.warning("公告 %s 没有有效内容可分类",bulletin_info.name)
+            logger.warning("公告 %s 没有有效内容可分类", bulletin_info.name)
             return base_bulletin
 
         # 构建内容数组
@@ -169,17 +169,24 @@ def resolve_notice(
             content_item = ContentTotal(
                 type=ParagraphTopic(category),
                 leng=category_lengths[category],
-                content=contents
+                content=contents,
             )
             total_leng += category_lengths[category]
             content_total_arr.append(content_item)
 
         # 更新公告信息
-        content_total_json = json.dumps([item.model_dump() for item in content_total_arr], ensure_ascii=False)
+        content_total_json = json.dumps(
+            [item.model_dump() for item in content_total_arr], ensure_ascii=False
+        )
         base_bulletin.content_total_arr = content_total_json
         base_bulletin.total_leng = total_leng
 
-        logger.info("公告 %s 解析完成，共 %d 种类型，总长度 %d", bulletin_info.name, len(content_total_arr), total_leng)
+        logger.info(
+            "公告 %s 解析完成，共 %d 种类型，总长度 %d",
+            bulletin_info.name,
+            len(content_total_arr),
+            total_leng,
+        )
         return base_bulletin
 
     except Exception as e:
