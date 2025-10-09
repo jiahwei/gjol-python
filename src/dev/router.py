@@ -1,5 +1,5 @@
-"""开发中执行某些任务的接口
-"""
+"""开发中执行某些任务的接口"""
+
 from pathlib import Path
 from fastapi import APIRouter, Query
 
@@ -41,7 +41,7 @@ def tran_model():
 
 
 @router.get("/fixBulletinRanks")
-def test_bulletin_ranks(version_id:int):
+def test_bulletin_ranks(version_id: int):
     """排序版本"""
     try:
         fix_bulletin_ranks(version_id)
@@ -51,18 +51,21 @@ def test_bulletin_ranks(version_id:int):
 
 
 @router.get("/fixAllBulletin")
-def fix_all_bulletin(page_num: int = Query(1, alias="pageNum")):
+def fix_all_bulletin(
+    page_num: int = Query(1, alias="pageNum"),
+    is_reversed: bool = Query(False, alias="reversed")
+):
     """补全全部公告
     Args:
         page_num (int, optional): 要下载的公告页号. Defaults to 1.目前最大76页
     """
-    try:
-        bulletin_list: list[DownloadBulletin] = download_bulletin_list(page_num,False)
-        for bulletin_info in bulletin_list:
-            content_url: Path | None = download_notice(bulletin_info)
-            bulletin: BulletinDB | None  = resolve_notice(content_path=content_url, bulletin_info = bulletin_info)
-            if bulletin:
-                update_bulletin(bulletin_info=bulletin)
-        return {"message": "测试成功"}
-    except Exception as e:
-        return {"message": "测试失败", "error": str(e)}
+
+    bulletin_list: list[DownloadBulletin] = download_bulletin_list(page_num, False)
+    for bulletin_info in reversed(bulletin_list) if is_reversed else bulletin_list:
+        content_url: Path | None = download_notice(bulletin_info)
+        bulletin: BulletinDB | None = resolve_notice(
+            content_path=content_url, bulletin_info=bulletin_info
+        )
+        if bulletin:
+            update_bulletin(bulletin_info=bulletin)
+
