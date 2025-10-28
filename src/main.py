@@ -1,4 +1,6 @@
-import logging.config
+"""APP 的入口
+
+"""
 import os
 from contextlib import asynccontextmanager
 
@@ -9,17 +11,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.bulletin.router import router as bulletin_router
 from src.dev.router import router as dev_router
 from src.database import create_db_and_tables
-from src.logs.service import LOGGING_CONFIG
+from src.logs.service import setup_logging
 
-
-def setup_logging():
-    try:
-        logging.config.dictConfig(LOGGING_CONFIG)
-    except Exception as e:
-        print(f"Error in Logging Configuration: {e}")
-        logging.basicConfig(level=logging.DEBUG)
 setup_logging()
-
 ml_models = {}
 
 @asynccontextmanager
@@ -47,7 +41,7 @@ app = FastAPI(
     version="1.0.0",
     docs_url=docs_url,
     redoc_url=redoc_url,
-    openapi_url=openapi_url
+    openapi_url=openapi_url,
 )
 
 # 根据环境配置CORS

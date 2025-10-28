@@ -1,4 +1,5 @@
 from pathlib import Path
+import logging.config
 
 # 确保日志目录存在
 log_dir = Path("src/logs")
@@ -113,3 +114,12 @@ LOGGING_CONFIG = {
         "level": "WARNING",
     },
 }
+
+def setup_logging():
+    """初始化log配置
+    """
+    try:
+        logging.config.dictConfig(LOGGING_CONFIG)
+    except Exception as e:
+        print(f"Error in Logging Configuration: {e}")
+        logging.basicConfig(level=logging.DEBUG)

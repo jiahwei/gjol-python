@@ -91,7 +91,7 @@ def preprocess_data_with_context(data: DataFrame) -> DataFrame:
 
     # 遍历数据，为每个段落添加其所属的标题类别
     for i, row in processed_data.iterrows():
-        if row["is_title"] == True:
+        if row["is_title"] is True:
             # 如果是标题行，更新当前标题类别
             current_title_category = row["label"]
 
