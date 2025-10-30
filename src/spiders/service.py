@@ -17,7 +17,7 @@ from bs4 import BeautifulSoup, Tag
 
 from constants import BASEURL, DEFAULT_FLODER_PATH_ABSOLUTE
 from src.bulletin.models import BulletinDB
-from src.bulletin.schemas import ContentTotal, ParagraphTopic, CHINESE_LABELS
+from src.bulletin.schemas import ContentTotal,ParagraphTopic
 from src.bulletin.service import query_bulletin
 from src.bulletin_list.schemas import BulletinType, DownloadBulletin
 from src.bulletin_list.models import BulletinList
@@ -167,7 +167,7 @@ def resolve_notice(
 
         for category, contents in category_contents.items():
             content_item = ContentTotal(
-                type=CHINESE_LABELS[ParagraphTopic(category)],
+                type=ParagraphTopic(category),
                 leng=category_lengths[category],
                 content=contents,
             )

@@ -38,33 +38,14 @@ class ParagraphTopic(Enum):
     Args:
         Enum (_type_): _description_
     """
-    FORMAT = "format"
-    UNUPDATE = "noUpdate"
-    STORE = "mall"
-    SKILL = "classAdjust"
-    SYSTEM = "generalAdjust"
+    FORMAT = "格式"
+    UNUPDATE = "无更新"
+    STORE = "商城"
+    SKILL = "职业调整"
+    SYSTEM = "通用调整"
     PVP = "PVP"
     PVE = "PVE"
     PVX = "PVX"
-    # FORMAT = "格式"
-    # UNUPDATE = "无更新"
-    # STORE = "商城"
-    # SKILL = "职业调整"
-    # SYSTEM = "通用调整"
-    # PVP = "PVP"
-    # PVE = "PVE"
-    # PVX = "PVX"
-
-CHINESE_LABELS = {
-    ParagraphTopic.FORMAT: "格式",
-    ParagraphTopic.UNUPDATE: "无更新",
-    ParagraphTopic.STORE: "商城",
-    ParagraphTopic.SKILL: "职业调整",
-    ParagraphTopic.SYSTEM: "通用调整",
-    ParagraphTopic.PVP: "PVP",
-    ParagraphTopic.PVE: "PVE",
-    ParagraphTopic.PVX: "PVX",
-}
 
 class ContentTotal(BaseModel):
     """接口“bulletins/byDate”的返回参数中content_total_arr的类型
