@@ -11,7 +11,7 @@ from src.bulletin.models import BulletinDB
 from src.bulletin_list.schemas import DownloadBulletin
 from src.bulletin_list.models import BulletinList
 from src.bulletin_list.service import get_really_bulletin_date, get_bulletin_type
-from src.version.service import get_version_id_by_date,get_bulletin_rank
+from src.version.service import get_version_id_by_date
 
 def get_new_date() -> str | None:
     """查询数据库中最新一条公告的日期"""

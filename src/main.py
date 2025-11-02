@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 # from src.task.daily import scheduler,apscheduler_start
 from src.bulletin.router import router as bulletin_router
 from src.dev.router import router as dev_router
+from src.auth.router import router as auth_router
 from src.database import create_db_and_tables
 from src.logs.service import setup_logging
 
@@ -63,6 +64,8 @@ app.add_middleware(
 
 app.include_router(bulletin_router, prefix="/bulletins", tags=["公告"])
 app.include_router(dev_router, prefix="/dev", tags=["开发"])
+app.include_router(auth_router, prefix="/auth", tags=["认证"])
+
 
 
 @app.get("/")

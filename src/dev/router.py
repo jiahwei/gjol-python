@@ -1,6 +1,7 @@
 """开发中执行某些任务的接口"""
 
 from pathlib import Path
+from typing import Annotated
 from fastapi import APIRouter, Query
 
 from src.bulletin.models import BulletinDB
@@ -17,7 +18,7 @@ router = APIRouter()
 
 @router.get("/testResolve")
 async def test_resolve(
-    test_date: str | None = Query(None, alias="testDate")
+    test_date: Annotated[str | None, Query(alias="testDate")] = None
 ) -> dict[str, str | list[BulletinDB]]:
     """测试解析公告的路由
     Args:
@@ -52,8 +53,8 @@ def test_bulletin_ranks(version_id: int):
 
 @router.get("/fixAllBulletin")
 def fix_all_bulletin(
-    page_num: int = Query(1, alias="pageNum"),
-    is_reversed: bool = Query(False, alias="reversed")
+    page_num: Annotated[int, Query(alias="pageNum")] = 1,
+    is_reversed: Annotated[bool, Query(alias="reversed")] = False
 ):
     """补全全部公告
     Args:
