@@ -13,3 +13,5 @@ class AuthPayload(BaseModel):
     """
     id: str = ""
     sig: str = ""
+    iv: str = ""
+    
