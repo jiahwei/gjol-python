@@ -1,5 +1,10 @@
-from pathlib import Path
+"""初始化log配置"""
+
+import os
 import logging.config
+from pathlib import Path
+
+env = os.getenv("ENV", "development")
 
 # 确保日志目录存在
 log_dir = Path("src/logs")
@@ -7,15 +12,23 @@ log_dir.mkdir(exist_ok=True, parents=True)
 
 # 定义日志文件路径
 common_log_path: Path = Path("src/logs/common.log")
+http_log_path: Path = Path("src/logs/http.log")
 nlp_test_path: Path = Path("src/logs/nlp_test.log")
 spiders_test_path: Path = Path("src/logs/spiders_test.log")
 spiders_history_path: Path = Path("src/logs/spiders_history.log")
 daily_path: Path = Path("src/logs/daily.log")
-train_path:Path = Path("src/logs/train.log")
+train_path: Path = Path("src/logs/train.log")
 
 # 确保所有日志文件存在
-for log_file in [common_log_path, nlp_test_path, spiders_test_path,
-                spiders_history_path, daily_path, train_path]:
+for log_file in [
+    common_log_path,
+    http_log_path,
+    nlp_test_path,
+    spiders_test_path,
+    spiders_history_path,
+    daily_path,
+    train_path,
+]:
     if not log_file.exists():
         log_file.touch()
 
@@ -37,7 +50,15 @@ LOGGING_CONFIG = {
             "formatter": "verbose",
             "filename": str(common_log_path),
             "encoding": "utf-8",
-            "mode":"a",
+            "mode": "a",
+        },
+        "http_log_handler": {
+            "class": "logging.FileHandler",
+            "level": "DEBUG",
+            "formatter": "verbose",
+            "filename": str(http_log_path),
+            "encoding": "utf-8",
+            "mode": "a",
         },
         "nlp_test_handler": {
             "class": "logging.FileHandler",
@@ -45,7 +66,7 @@ LOGGING_CONFIG = {
             "formatter": "verbose",
             "filename": str(nlp_test_path),
             "encoding": "utf-8",
-            "mode":"a",
+            "mode": "a",
         },
         "spiders_test_handler": {
             "class": "logging.FileHandler",
@@ -53,7 +74,7 @@ LOGGING_CONFIG = {
             "formatter": "verbose",
             "filename": str(spiders_test_path),
             "encoding": "utf-8",
-            "mode":"a",
+            "mode": "a",
         },
         "spiders_history_handler": {
             "class": "logging.FileHandler",
@@ -61,7 +82,7 @@ LOGGING_CONFIG = {
             "formatter": "verbose",
             "filename": str(spiders_history_path),
             "encoding": "utf-8",
-            "mode":"a",
+            "mode": "a",
         },
         "daily_handler": {
             "class": "logging.FileHandler",
@@ -69,17 +90,16 @@ LOGGING_CONFIG = {
             "formatter": "verbose",
             "filename": str(daily_path),
             "encoding": "utf-8",
-            "mode":"a",
+            "mode": "a",
         },
-        "train_handler" : {
+        "train_handler": {
             "class": "logging.FileHandler",
             "level": "DEBUG",
             "formatter": "verbose",
             "filename": str(train_path),
             "encoding": "utf-8",
-            "mode":"a",
-        }
-        # 可以为更多模块添加处理器
+            "mode": "a",
+        },
     },
     "loggers": {
         "nlp_test": {
@@ -102,6 +122,11 @@ LOGGING_CONFIG = {
             "level": "DEBUG",
             "propagate": False,
         },
+        "http": {
+            "handlers": ["http_log_handler"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
         "train": {
             "handlers": ["train_handler"],
             "level": "DEBUG",
@@ -115,11 +140,29 @@ LOGGING_CONFIG = {
     },
 }
 
+
 def setup_logging():
-    """初始化log配置
-    """
+    """初始化log配置"""
     try:
         logging.config.dictConfig(LOGGING_CONFIG)
-    except Exception as e:
-        print(f"Error in Logging Configuration: {e}")
-        logging.basicConfig(level=logging.DEBUG)
+        if env == "production":
+            for name in (
+                "http",
+                "nlp_test",
+                "spiders_test",
+                "spiders_history",
+                "daily",
+                "train",
+            ):
+                logger = logging.getLogger(name)
+                # 生产环境：所有日志器都用 INFO
+                logger.setLevel(logging.INFO)
+        else:
+            # 开发环境保留各模块的 DEBUG，便于调试
+            pass
+    except (ValueError, TypeError, KeyError, ImportError) as e:
+        print(f"Invalid logging configuration: {e}")
+        logging.basicConfig(level=logging.DEBUG, force=True)
+    except (OSError, PermissionError, FileNotFoundError) as e:
+        print(f"Logging file I/O error: {e}")
+        logging.basicConfig(level=logging.DEBUG, force=True)

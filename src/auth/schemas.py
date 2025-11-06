@@ -5,13 +5,18 @@
 from pydantic import BaseModel
 
 
-class AuthPayload(BaseModel):
+class IsOpenManagePayload(BaseModel):
     """认证服务的入参类型
 
     Args:
-        BaseModel (_type_): _description_
+        id (str): 加密后的设备ID
+        sig (str): 签名
+        iv (str): 初始化向量
     """
     id: str = ""
     sig: str = ""
     iv: str = ""
-    
+class IsOpenManageResponse(BaseModel):
+    """认证服务的出参类型
+    """
+    isOpenManage: bool = False

@@ -8,10 +8,15 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # from src.task.daily import scheduler,apscheduler_start
+# 路由
 from src.bulletin.router import router as bulletin_router
 from src.dev.router import router as dev_router
 from src.auth.router import router as auth_router
+# 中间件
+from src.utils.http import LoggingMiddleware
+# 数据库
 from src.database import create_db_and_tables
+# 其他工具
 from src.logs.service import setup_logging
 
 setup_logging()
@@ -44,6 +49,9 @@ app = FastAPI(
     redoc_url=redoc_url,
     openapi_url=openapi_url,
 )
+
+# 添加日志中间件
+app.add_middleware(LoggingMiddleware)
 
 # 根据环境配置CORS
 if ENV == "production":

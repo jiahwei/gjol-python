@@ -10,9 +10,10 @@ RUN mkdir -p /code/bulletins /code/bulletins/routine /code/bulletins/skill /code
 
 COPY ./requirements.txt /code/requirements.txt
 
-RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
+ENV PIP_DEFAULT_TIMEOUT=60
+RUN python -m pip install --no-cache-dir --upgrade pip setuptools wheel -i http://mirrors.aliyun.com/pypi/simple --trusted-host mirrors.aliyun.com
+RUN pip install --no-cache-dir -i http://mirrors.aliyun.com/pypi/simple --trusted-host mirrors.aliyun.com -r /code/requirements.txt
 
-COPY ./util /code/util
 COPY ./constants.py /code/constants.py
 
 # 数据库
