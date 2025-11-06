@@ -63,26 +63,35 @@ def setup_cors_middleware(app) -> None:
 class LoggingMiddleware(BaseHTTPMiddleware):
     """日志中间件,记录请求和响应日志"""
 
-    async def dispatch(self, request, call_next):
+    async def dispatch(self, request: Request, call_next):
         request_id = str(uuid.uuid4())
+        request.state.request_id = request_id
         http_logger.info(
             "[%s] Start request: %s %s", request_id, request.method, request.url
         )
-        response = await call_next(request)
+        try:
+            response = await call_next(request)
+        except Exception:
+            http_logger.exception("[%s] Exception during request handling", request_id)
+            raise
         http_logger.info("[%s] End response: %s", request_id, response.status_code)
+        response.headers["X-Request-ID"] = request_id
         return response
 
 
 async def http_exception_wrapper(request: Request, exc: HTTPException):
     """HTTP 异常处理中间件
     """
+
+    request_id = getattr(request.state, "request_id", None) or str(uuid.uuid4())
     http_logger.error(
         "[%s] HTTP Exception: %s %s",
-        request.state.request_id,
+        request_id,
         exc.status_code,
         exc.detail,
     )
     return JSONResponse(
         status_code=exc.status_code,
-        content=error_response(exc.status_code, exc.detail).model_dump(),
+        content=error_response(exc.status_code, str(exc.detail)).model_dump(),
+        headers={"X-Request-ID": request_id},
     )

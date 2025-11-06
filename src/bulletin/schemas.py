@@ -105,7 +105,7 @@ class ListInVersionReturn(BaseModel):
     acronyms: str
     start: str
     end: str
-    total_version_len: int = Field(0, alias="totalVersionLen")
+    # total_version_len: int = Field(0, alias="totalVersionLen")
     list: list[BulletinInVersion]
 
 

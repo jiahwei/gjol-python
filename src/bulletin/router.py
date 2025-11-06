@@ -7,6 +7,7 @@ import json
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, and_, desc, select
+from collections.abc import Sequence
 
 from src.bulletin.models import BulletinDB
 from src.bulletin.schemas import (
@@ -17,12 +18,14 @@ from src.bulletin.schemas import (
 )
 from src.database import get_session
 from src.version.models import Version
+from src.utils.http import success_response
+from src.utils.schemas import Response
 
 router = APIRouter()
 
 
-@router.get("/query", response_model=BulletinDB)
-def query(bulletin_id: int = 1, session: Session = Depends(get_session)):
+@router.get("/query", response_model=Response[BulletinDB])
+def query(bulletin_id: int = 1, session: Session = Depends(get_session)) -> Response[BulletinDB]:
     """
     根据公告ID查询公告信息
 
@@ -39,11 +42,11 @@ def query(bulletin_id: int = 1, session: Session = Depends(get_session)):
     if first_result is None:
         raise HTTPException(status_code=404, detail="未找到公告")
 
-    return first_result
+    return success_response(first_result)
 
 
 @router.post("/byDate", response_model=list[BulletinDB])
-def bulletin_by_date(payload: DatePayload, session: Session = Depends(get_session)):
+def bulletin_by_date(payload: DatePayload, session: Session = Depends(get_session)) -> Response[Sequence[BulletinDB]]:
     """
     根据公告日期查询公告信息
 
@@ -54,7 +57,7 @@ def bulletin_by_date(payload: DatePayload, session: Session = Depends(get_sessio
         list[BulletinDB]: 符合日期条件的公告列表
     """
     if not (payload.start_date and payload.end_date):
-        return HTTPException(status_code=500, detail="payload 不能为空")
+        raise HTTPException(status_code=500, detail="payload 不能为空")
     statement = select(BulletinDB).where(
         and_(
             BulletinDB.bulletin_date >= str(payload.start_date),
@@ -62,13 +65,13 @@ def bulletin_by_date(payload: DatePayload, session: Session = Depends(get_sessio
         )
     )
     results = session.exec(statement).all()
-    return results
+    return success_response(results)
 
 
-@router.get("/listInVersion", response_model=list[ListInVersionReturn])
+@router.get("/listInVersion", response_model=Response[list[ListInVersionReturn]])
 def list_in_version(
     session: Session = Depends(get_session),
-) -> list[ListInVersionReturn]:
+) -> Response[list[ListInVersionReturn]]:
     """
     获取按版本分组的公告列表
 
@@ -111,11 +114,11 @@ def list_in_version(
             )
 
     version_list = list(version_dict.values())
-    return version_list
+    return success_response(version_list)
 
 
-@router.get("/new", response_model=BulletinInfo)
-def new_bulletin(session: Session = Depends(get_session)) -> BulletinInfo:
+@router.get("/new", response_model=Response[BulletinInfo])
+def new_bulletin(session: Session = Depends(get_session)) -> Response[BulletinInfo]:
     """
     获取最新的公告信息
 
@@ -155,7 +158,7 @@ def new_bulletin(session: Session = Depends(get_session)) -> BulletinInfo:
     content_arr = json.loads(bulletin_info.content_total_arr)
 
     # 构建返回的公告信息
-    bulletin_info = BulletinInfo(
+    bulletin_info_obj = BulletinInfo(
         id=bulletin_info.id,
         date=bulletin_info.bulletin_date,
         order=order,
@@ -165,4 +168,4 @@ def new_bulletin(session: Session = Depends(get_session)) -> BulletinInfo:
         versionId=version_info.id,
         versionName=version_info.name,
     )
-    return bulletin_info
+    return success_response(bulletin_info_obj)

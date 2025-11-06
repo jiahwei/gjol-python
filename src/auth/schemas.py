@@ -20,3 +20,4 @@ class IsOpenManageResponse(BaseModel):
     """认证服务的出参类型
     """
     isOpenManage: bool = False
+    

@@ -40,7 +40,7 @@ def verify_signature(encrypted_id: str, signature: str) -> bool:
     return hmac.compare_digest(expected, signature)
 
 
-def decrypt_android_id(encrypted_id: str,iv:str) -> str:
+def decrypt_device_id(encrypted_id: str,iv:str) -> str:
     """解密
 
     Args:
