@@ -5,7 +5,7 @@ import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import HTTPException
 
 # from src.task.daily import scheduler,apscheduler_start
 # 路由
@@ -13,7 +13,8 @@ from src.bulletin.router import router as bulletin_router
 from src.dev.router import router as dev_router
 from src.auth.router import router as auth_router
 # 中间件
-from src.utils.http import LoggingMiddleware
+from src.utils.http import LoggingMiddleware,setup_cors_middleware,http_exception_wrapper
+from src.utils.http import docs_url,redoc_url,openapi_url
 # 数据库
 from src.database import create_db_and_tables
 # 其他工具
@@ -33,13 +34,6 @@ async def lifespan(app: FastAPI):
     # scheduler.shutdown()
     ml_models.clear()
 
-ENV = os.getenv("ENV", "development")
-
-# 根据环境决定是否显示文档
-docs_url = None if ENV == "production" else "/docs"
-redoc_url = None if ENV == "production" else "/redoc"
-openapi_url = None if ENV == "production" else "/openapi.json"
-
 app = FastAPI(
     lifespan=lifespan,
     title="gjoldb API",
@@ -52,24 +46,11 @@ app = FastAPI(
 
 # 添加日志中间件
 app.add_middleware(LoggingMiddleware)
+setup_cors_middleware(app)
+# 添加异常处理中间件
+app.add_exception_handler(HTTPException, http_exception_wrapper)
 
-# 根据环境配置CORS
-if ENV == "production":
-    origins = [
-        "https://gjoldb.info",
-        "https://www.gjoldb.info",
-    ]
-else:
-    origins = ["*"]  # 开发环境允许所有来源
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE"],
-    allow_headers=["Content-Type", "Authorization"],
-)
-
+# 路由
 app.include_router(bulletin_router, prefix="/bulletins", tags=["公告"])
 app.include_router(dev_router, prefix="/dev", tags=["开发"])
 app.include_router(auth_router, prefix="/auth", tags=["认证"])

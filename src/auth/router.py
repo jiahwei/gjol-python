@@ -3,6 +3,7 @@
 from fastapi import APIRouter, HTTPException
 from src.auth.schemas import IsOpenManagePayload,IsOpenManageResponse
 from src.auth.service import verify_signature,decrypt_android_id,MANAGED_DEVICES
+from src.utils.http import success_response,error_response
 
 router = APIRouter()
 
@@ -21,8 +22,6 @@ def is_open_manage(payload: IsOpenManagePayload) -> IsOpenManageResponse:
 
     try:
         android_id = decrypt_android_id(payload.id,payload.iv)
-    except HTTPException:
-        raise
     except Exception:
         raise HTTPException(status_code=400, detail="解密失败")
 
