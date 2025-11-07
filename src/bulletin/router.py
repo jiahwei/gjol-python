@@ -45,8 +45,8 @@ def query(bulletin_id: int = 1, session: Session = Depends(get_session)) -> Resp
     return success_response(first_result)
 
 
-@router.post("/byDate", response_model=list[BulletinDB])
-def bulletin_by_date(payload: DatePayload, session: Session = Depends(get_session)) -> Response[Sequence[BulletinDB]]:
+@router.post("/byDate", response_model=Response[list[BulletinDB]])
+def bulletin_by_date(payload: DatePayload, session: Session = Depends(get_session)) -> Response[list[BulletinDB]]:
     """
     根据公告日期查询公告信息
 

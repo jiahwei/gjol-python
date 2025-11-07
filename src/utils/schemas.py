@@ -7,6 +7,6 @@ T = TypeVar("T")
 class Response(BaseModel, Generic[T]):
     """统一封装返回类型
     """
-    code: int = 0
+    code: int = 200
     message: str = "OK"
     data: T | None = None
