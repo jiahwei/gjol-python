@@ -1,23 +1,25 @@
 """ 定时任务执行的脚本
-该脚本定义了一个定时任务执行的函数 `periodic_function`，并使用 `BackgroundScheduler` 类创建了一个定时任务调度器 `scheduler`。
+每周四检查是否有新的公告内容
+拉到新的公告内容，更新数据库并推送到GitHub
 """
+import logging
 from pathlib import Path
 
 from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler  # type: ignore
 
 from src.bulletin.models import BulletinDB
-from src.bulletin.service import update_bulletin,get_new_date
+from src.bulletin.service import update_bulletin
 from src.bulletin_list.schemas import DownloadBulletin
 from src.bulletin_list.service import download_bulletin_list
 from src.spiders.service import download_notice, resolve_notice
 
 scheduler = BackgroundScheduler()
-
+daily_logger = logging.getLogger("daily")
 
 def periodic_function():
     """定时执行的操作"""
-    print(f"定时执行的操作时间：{datetime.now()}")
+    daily_logger.info("定时执行的操作时间：%s", datetime.now())
     return
 
 
@@ -33,6 +35,6 @@ def dayily_fun() -> None:
 
 async def apscheduler_start() -> None:
     """启动定时任务"""
-    scheduler.add_job(periodic_function, "interval", seconds=3)
+    scheduler.add_job(periodic_function, "interval", hours=1)
     scheduler.start()
 
