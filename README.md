@@ -1,5 +1,13 @@
 # gjol-python
 
+## git 子模块
+
+拉取后需要初始化子模块
+
+```bash
+git submodule update --init --recursive
+```
+
 ## 环境准备
 
 安装 `pyenv` 和 `pyenv-virtualenv`
