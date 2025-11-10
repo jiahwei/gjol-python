@@ -1,3 +1,6 @@
 [submodule "sqlite"]
 	path = sqlite
 	url = git@github.com:jiahwei/gjol-sqlite.git
+[submodule "bulletins"]
+	path = bulletins
+	url = git@github.com:jiahwei/gjol-bulletins.git
