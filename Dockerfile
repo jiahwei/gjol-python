@@ -22,7 +22,7 @@ COPY ./sqlite /code/sqlite
 COPY ./src /code/src
 
 # 确保日志目录存在
-RUN mkdir -p /code/src/logs
+RUN mkdir -p /code/logs
 
 # 设置权限
 RUN chmod -R 755 /code

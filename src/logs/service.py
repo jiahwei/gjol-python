@@ -7,17 +7,17 @@ from pathlib import Path
 env = os.getenv("ENV", "development")
 
 # 确保日志目录存在
-log_dir = Path("src/logs")
+log_dir = Path("logs")
 log_dir.mkdir(exist_ok=True, parents=True)
 
 # 定义日志文件路径
-common_log_path: Path = Path("src/logs/common.log")
-http_log_path: Path = Path("src/logs/http.log")
-nlp_test_path: Path = Path("src/logs/nlp_test.log")
-spiders_test_path: Path = Path("src/logs/spiders_test.log")
-spiders_history_path: Path = Path("src/logs/spiders_history.log")
-daily_path: Path = Path("src/logs/daily.log")
-train_path: Path = Path("src/logs/train.log")
+common_log_path: Path = Path("logs/common.log")
+http_log_path: Path = Path("logs/http.log")
+nlp_test_path: Path = Path("logs/nlp_test.log")
+spiders_test_path: Path = Path("logs/spiders_test.log")
+spiders_history_path: Path = Path("logs/spiders_history.log")
+daily_path: Path = Path("logs/daily.log")
+train_path: Path = Path("logs/train.log")
 
 # 确保所有日志文件存在
 for log_file in [
