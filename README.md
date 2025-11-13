@@ -59,7 +59,8 @@ pyenv-venv activate gjol-server-311
 
 ```bash
 pip install -r requirements.txt
-pip freeze > requirements.tx
+pip freeze > requirements.txt
+pip freeze | Out-File -Encoding utf8 requirements.txt
 # 阿里云镜像
 pip install -r requirements.txt -i http://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com
 ```

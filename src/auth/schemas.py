@@ -20,4 +20,11 @@ class IsOpenManageResponse(BaseModel):
     """认证服务的出参类型
     """
     isOpenManage: bool = False
-    
+    token: str = ""
+
+class CreateTokenPayload(BaseModel):
+    """创建token的入参类型
+    """
+    sub: str = ""
+    exp: int = 0
+    scope: str = ""

@@ -2,7 +2,7 @@
 """
 from fastapi import APIRouter, HTTPException
 from src.auth.schemas import IsOpenManagePayload,IsOpenManageResponse
-from src.auth.service import verify_signature,decrypt_device_id,MANAGED_DEVICES
+from src.auth.service import verify_signature,decrypt_device_id,MANAGED_DEVICES,creat_token
 from src.utils.http import success_response
 from src.utils.schemas import Response
 
@@ -26,4 +26,5 @@ def is_open_manage(payload: IsOpenManagePayload) -> Response[IsOpenManageRespons
     except Exception:
         raise HTTPException(status_code=400, detail="解密失败")
 
-    return success_response(IsOpenManageResponse(isOpenManage=device_id in MANAGED_DEVICES))
+    token = creat_token(device_id)
+    return success_response(IsOpenManageResponse(isOpenManage=device_id in MANAGED_DEVICES, token=str(token)))
