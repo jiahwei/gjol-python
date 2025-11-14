@@ -10,3 +10,10 @@ class Response(BaseModel, Generic[T]):
     code: int = 200
     message: str = "OK"
     data: T | None = None
+
+class CreateTokenPayload(BaseModel):
+    """创建token的入参类型
+    """
+    sub: str = ""
+    exp: int = 0
+    scope: str = ""

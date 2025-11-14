@@ -1,7 +1,6 @@
 """
 认证服务 ORM 对象
 """
-
 from pydantic import BaseModel
 
 
@@ -16,15 +15,17 @@ class IsOpenManagePayload(BaseModel):
     id: str = ""
     sig: str = ""
     iv: str = ""
+
 class IsOpenManageResponse(BaseModel):
     """认证服务的出参类型
     """
     isOpenManage: bool = False
     token: str = ""
+    refreshToken: str = ""
 
-class CreateTokenPayload(BaseModel):
-    """创建token的入参类型
+class RefreshTokenResponse(BaseModel):
+    """刷新Token的出参类型
     """
-    sub: str = ""
-    exp: int = 0
-    scope: str = ""
+    token: str = ""
+    refreshToken: str = ""
+

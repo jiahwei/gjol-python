@@ -2,7 +2,7 @@
 
 from pathlib import Path
 from typing import Annotated
-from fastapi import APIRouter, Query,HTTPException
+from fastapi import APIRouter, Query,HTTPException,Depends
 
 from src.bulletin.models import BulletinDB
 from src.dev.service import test_resolve_notice
@@ -12,9 +12,12 @@ from src.bulletin.service import update_bulletin
 from src.bulletin_list.schemas import DownloadBulletin
 from src.bulletin_list.service import download_bulletin_list
 from src.spiders.service import download_notice, resolve_notice
-from src.utils.http import success_response
+from src.utils.http import success_response,get_current_device
 from src.utils.schemas import Response
-router = APIRouter()
+
+router = APIRouter(
+    dependencies=[Depends(get_current_device)],
+)
 
 
 @router.get("/testResolve", response_model=Response[list[BulletinDB]])
@@ -26,6 +29,7 @@ async def test_resolve(
         test_date (str | None): 测试的日期，默认为None, 表示测试所有公告
     """
     try:
+
         res_list: list[BulletinDB] = test_resolve_notice(test_date)
         return success_response(res_list)
     except Exception as e:

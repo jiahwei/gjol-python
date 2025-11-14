@@ -50,9 +50,10 @@ app = FastAPI(
 
 # 添加日志中间件
 app.add_middleware(LoggingMiddleware)
-setup_cors_middleware(app)
 # 添加异常处理中间件
 app.add_exception_handler(HTTPException, http_exception_wrapper)
+# CORS 中间件
+setup_cors_middleware(app)
 
 # 路由
 app.include_router(bulletin_router, prefix="/bulletins", tags=["公告"])

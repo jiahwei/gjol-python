@@ -1,20 +1,34 @@
-"""提供http请求的工具函数"""
+"""
+http相关的工具函数、依赖和中间件
+"""
 
-from typing import TypeVar
+from typing import TypeVar, Annotated
 import uuid
 import os
 import logging
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
+import time
+import jwt
+
+from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
+from fastapi import HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.exceptions import HTTPException
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
 from dotenv import load_dotenv
-
-from src.utils.schemas import Response
+from src.utils.schemas import Response, CreateTokenPayload
 
 _ = load_dotenv()
 ENV = os.getenv("ENV")
+_JWT_SECRET = os.getenv("JWT_SECRET")
+if not _JWT_SECRET:
+    raise ValueError("JWT_SECRET must be set in the environment variables")
+JWT_SECRET: str = _JWT_SECRET
+raw_devices = os.getenv("MANAGED_DEVICES", "")
+MANAGED_DEVICES = set[str](device.strip() for device in raw_devices.split(",") if device.strip())
+
+security = HTTPBearer()
 # 根据环境决定是否显示文档
 docs_url = None if ENV == "production" else "/docs"
 redoc_url = None if ENV == "production" else "/redoc"
@@ -80,8 +94,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
 
 
 async def http_exception_wrapper(request: Request, exc: HTTPException):
-    """HTTP 异常处理中间件
-    """
+    """HTTP 异常处理中间件"""
 
     request_id = getattr(request.state, "request_id", None) or str(uuid.uuid4())
     http_logger.error(
@@ -95,3 +108,79 @@ async def http_exception_wrapper(request: Request, exc: HTTPException):
         content=error_response(exc.status_code, str(exc.detail)).model_dump(),
         headers={"X-Request-ID": request_id},
     )
+
+
+def creat_token(device_id: str) -> str:
+    """创建token"""
+    payload_model = CreateTokenPayload(
+        sub=device_id, exp=int(time.time()) + 3600, scope="manage"
+    )
+    payload: dict[str, int | str] = payload_model.model_dump()
+    return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+
+def creat_refresh_token(device_id: str) -> str:
+    """创建refresh_token"""
+    payload_model = CreateTokenPayload(
+        sub=device_id, exp=int(time.time()) + 60 * 60 * 24 * 30, scope="refresh"
+    )
+    payload: dict[str, int | str] = payload_model.model_dump()
+    return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+
+def create_tokens(device_id: str) -> dict[str, str]:
+    """创建token和refresh_token"""
+    return {
+        "token": creat_token(device_id),
+        "refreshToken": creat_refresh_token(device_id),
+    }
+
+def verify_token(token: str) -> CreateTokenPayload:
+    """验证token"""
+    payload: dict[str, int | str] = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+    return CreateTokenPayload.model_validate(payload)
+
+def verify_refresh_token(token: str) -> CreateTokenPayload:
+    """验证refresh_token"""
+    payload: dict[str, int | str] = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+    return CreateTokenPayload.model_validate(payload)
+
+def get_current_refresh_device(
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
+) -> str:
+    """用refersh_token 刷新token时的依赖"""
+    token = credentials.credentials
+    try:
+        data = verify_refresh_token(token)
+    except ExpiredSignatureError as exc:
+        raise HTTPException(status_code=401, detail="RefreshToken已过期") from exc
+    except InvalidTokenError as exc:
+        raise HTTPException(status_code=401, detail="RefreshToken无效") from exc
+
+    if data.scope != "refresh":
+        raise HTTPException(status_code=403, detail="权限不足")
+    if not data.sub:
+        raise HTTPException(status_code=400, detail="Token缺少设备标识")
+    if data.sub not in MANAGED_DEVICES:
+        raise HTTPException(status_code=403, detail="设备未授权")
+    return data.sub
+
+
+def get_current_device(
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
+) -> str:
+    """设备认证依赖 - 验证Token并检查设备授权状态"""
+    token = credentials.credentials
+    try:
+        data = verify_token(token)
+    except ExpiredSignatureError as exc:
+        raise HTTPException(status_code=401, detail="Token已过期") from exc
+    except InvalidTokenError as exc:
+        raise HTTPException(status_code=401, detail="Token无效") from exc
+
+    if data.scope != "manage":
+        raise HTTPException(status_code=403, detail="权限不足")
+
+    if not data.sub:
+        raise HTTPException(status_code=400, detail="Token缺少设备标识")
+    if data.sub not in MANAGED_DEVICES:
+        raise HTTPException(status_code=403, detail="设备未授权")
+    return data.sub
