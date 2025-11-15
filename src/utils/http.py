@@ -9,7 +9,6 @@ import logging
 import time
 import jwt
 
-from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 from fastapi import HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -93,9 +92,11 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         return response
 
 
-async def http_exception_wrapper(request: Request, exc: HTTPException):
-    """HTTP 异常处理中间件"""
-
+async def http_exception_wrapper(request: Request, exc: Exception):
+    """HTTP 异常处理中间件
+    """
+    if not isinstance(exc, HTTPException):
+        return JSONResponse(status_code=500, content={"detail": "Internal Server Error"})
     request_id = getattr(request.state, "request_id", None) or str(uuid.uuid4())
     http_logger.error(
         "[%s] HTTP Exception: %s %s",
@@ -116,7 +117,7 @@ def creat_token(device_id: str) -> str:
         sub=device_id, exp=int(time.time()) + 3600, scope="manage"
     )
     payload: dict[str, int | str] = payload_model.model_dump()
-    return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+    return str(jwt.encode(payload, JWT_SECRET, algorithm="HS256"))
 
 def creat_refresh_token(device_id: str) -> str:
     """创建refresh_token"""
@@ -124,7 +125,7 @@ def creat_refresh_token(device_id: str) -> str:
         sub=device_id, exp=int(time.time()) + 60 * 60 * 24 * 30, scope="refresh"
     )
     payload: dict[str, int | str] = payload_model.model_dump()
-    return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+    return str(jwt.encode(payload, JWT_SECRET, algorithm="HS256"))
 
 def create_tokens(device_id: str) -> dict[str, str]:
     """创建token和refresh_token"""
@@ -150,9 +151,9 @@ def get_current_refresh_device(
     token = credentials.credentials
     try:
         data = verify_refresh_token(token)
-    except ExpiredSignatureError as exc:
+    except jwt.ExpiredSignatureError as exc:
         raise HTTPException(status_code=401, detail="RefreshToken已过期") from exc
-    except InvalidTokenError as exc:
+    except jwt.InvalidTokenError as exc:
         raise HTTPException(status_code=401, detail="RefreshToken无效") from exc
 
     if data.scope != "refresh":
@@ -171,9 +172,9 @@ def get_current_device(
     token = credentials.credentials
     try:
         data = verify_token(token)
-    except ExpiredSignatureError as exc:
+    except jwt.ExpiredSignatureError as exc:
         raise HTTPException(status_code=401, detail="Token已过期") from exc
-    except InvalidTokenError as exc:
+    except jwt.InvalidTokenError as exc:
         raise HTTPException(status_code=401, detail="Token无效") from exc
 
     if data.scope != "manage":

@@ -1,4 +1,7 @@
-"""开发中执行某些任务的接口"""
+"""开发和运维中执行某些任务的接口
+生产环境中需要鉴权，只有管理设备才能执行这些任务
+"""
+import os
 
 from pathlib import Path
 from typing import Annotated
@@ -15,8 +18,10 @@ from src.spiders.service import download_notice, resolve_notice
 from src.utils.http import success_response,get_current_device
 from src.utils.schemas import Response
 
+env = os.getenv("ENV", "development")
+
 router = APIRouter(
-    dependencies=[Depends(get_current_device)],
+    dependencies= [] if env == "development" else [Depends(get_current_device)],
 )
 
 
@@ -33,7 +38,7 @@ async def test_resolve(
         res_list: list[BulletinDB] = test_resolve_notice(test_date)
         return success_response(res_list)
     except Exception as e:
-        raise HTTPException(status_code=500, detail={"message": "测试失败", "error": str(e)})
+        raise HTTPException(status_code=500, detail={"message": "测试失败", "error": str(e)}) from e
 
 
 @router.get("/tranModel", response_model=Response[None])
@@ -43,7 +48,7 @@ def tran_model() -> Response[None]:
         train_model()
         return success_response()
     except Exception as e:
-        raise HTTPException(status_code=500, detail={"message": "测试失败", "error": str(e)})
+        raise HTTPException(status_code=500, detail={"message": "测试失败", "error": str(e)}) from e
 
 
 @router.get("/fixBulletinRanks", response_model=Response[None])
@@ -53,7 +58,7 @@ def test_bulletin_ranks(version_id: int) -> Response[None]:
         fix_bulletin_ranks(version_id)
         return success_response()
     except Exception as e:
-        raise HTTPException(status_code=500, detail={"message": "测试失败", "error": str(e)})
+        raise HTTPException(status_code=500, detail={"message": "测试失败", "error": str(e)}) from e
 
 
 @router.get("/fixAllBulletin", response_model=Response[None])
@@ -76,5 +81,4 @@ def fix_all_bulletin(
                 update_bulletin(bulletin_info=bulletin)
         return success_response()
     except Exception as e:
-        raise HTTPException(status_code=500, detail={"message": "补全失败", "error": str(e)})
-
+        raise HTTPException(status_code=500, detail={"message": "补全失败", "error": str(e)}) from e

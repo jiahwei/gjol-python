@@ -158,7 +158,7 @@ def setup_logging():
                 # 生产环境：所有日志器都用 INFO
                 logger.setLevel(logging.INFO)
         else:
-            # 开发环境保留各模块的 DEBUG，便于调试
+            # 开发环境保留各模块的 DEBUG
             pass
     except (ValueError, TypeError, KeyError, ImportError) as e:
         print(f"Invalid logging configuration: {e}")

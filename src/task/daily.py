@@ -24,7 +24,7 @@ def periodic_function():
 
 
 def dayily_fun() -> None:
-    """每天定时执行的任务"""
+    """每周四定时执行的任务"""
     bulletin_list: list[DownloadBulletin] = download_bulletin_list()
     for bulletin_info in bulletin_list:
         content_url: Path | None = download_notice(bulletin_info)
