@@ -64,24 +64,23 @@ def update_bulletin(bulletin_info: BulletinDB) -> None:
         bulletin_info (BulletinDB): 公告信息
     """
     with Session(engine) as session:
-        if bulletin_info.id is None:
+        # 使用 original_date 来查询数据库中是否已有该记录，而不是仅依赖 id，因为新构造的对象 id 是 None
+        statement = select(BulletinDB).where(
+            BulletinDB.original_date == bulletin_info.original_date
+        )
+        existing_bulletin: BulletinDB | None = session.exec(statement).first()
+
+        if existing_bulletin is None:
+            # 如果数据库里没有记录，就添加
             session.add(bulletin_info)
             session.commit()
             session.refresh(bulletin_info)
         else:
-            # 更新公告信息
-            statement= select(BulletinDB).where(
-                BulletinDB.id == bulletin_info.id
-            )
-            bulletin: BulletinDB | None = session.exec(statement).first()
-            if bulletin:
-                # 更新字段
-                bulletin.content_total_arr = bulletin_info.content_total_arr
-                bulletin.total_leng = bulletin_info.total_leng
-                # rank:int = get_bulletin_rank(version_id = bulletin_info.version_id,total_leng= bulletin_info.total_leng)
-                # bulletin.rank_id = rank
-                session.add(bulletin)
-                session.commit()
-                session.refresh(bulletin)
+            # 更新已存在的公告信息
+            existing_bulletin.content_total_arr = bulletin_info.content_total_arr
+            existing_bulletin.total_leng = bulletin_info.total_leng
+            session.add(existing_bulletin)
+            session.commit()
+            session.refresh(existing_bulletin)
 
 # def update_bulletin_content(bulletin_info: BulletinDB) -> None:

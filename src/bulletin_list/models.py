@@ -22,6 +22,6 @@ class BulletinList(SQLModel, table=True):
     __tablename__: str = "bulletin_list" # type: ignore
     id: int | None = Field(default=None, primary_key=True)
     name: str = Field(index=True)
-    href: str
+    href: str = Field(unique=True)
     date: str = Field(index=True)
     type: str = Field(default=BulletinType.OTHER.value)

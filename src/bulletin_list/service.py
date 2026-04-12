@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
 from bs4.element import NavigableString, Tag
 import requests
-from sqlmodel import Session, and_, desc, select
+from sqlmodel import Session, and_, desc, or_, select
 
 from src.bulletin_list.models import BulletinList
 from src.bulletin_list.schemas import BulletinType, DownloadBulletin
@@ -71,7 +71,10 @@ def get_bulletin_list(url: str, latest_date: str | None = None) -> list[Download
         list[DownloadBulletin]: 需要下载的公告列表
     """
     try:
-        res: str = requests.get(url, headers=header, timeout=30).text
+        response = requests.get(url, headers=header, timeout=30)
+        # 强制使用 utf-8 解码，防止 requests 猜测错误导致中文乱码
+        response.encoding = 'utf-8'
+        res: str = response.text
         soup: BeautifulSoup = BeautifulSoup(res, "lxml")
         target_div: Tag | NavigableString | None = soup.find("div", class_="list_box")
 
@@ -150,11 +153,14 @@ def update_bulletin_list(info: DownloadBulletin):
         info (DownloadBulletin): 要保存的公告信息
     """
     with Session(engine) as session:
-        # 先检查数据是否已存在
+        # 先检查数据是否已存在，这里不仅可以用 name+date 判断，更准确的是用 href 判断
         statement = select(BulletinList).where(
-            and_(
-                BulletinList.name == info.name,
-                BulletinList.date == info.date
+            or_(
+                BulletinList.href == info.href,
+                and_(
+                    BulletinList.name == info.name,
+                    BulletinList.date == info.date
+                )
             )
         )
         existing = session.exec(statement).first()

@@ -27,7 +27,7 @@ router = APIRouter(
 
 @router.get("/testResolve", response_model=Response[list[BulletinDB]])
 async def test_resolve(
-    test_date: Annotated[str | None, Query(alias="testDate")] = "2023-10-11",
+    test_date: Annotated[str | None, Query(alias="testDate")] = "2018-08-16",
     use_ollama: Annotated[bool, Query(alias="useOllama")] = True
 ) -> Response[list[BulletinDB]]:
     """测试解析公告的路由
@@ -77,13 +77,15 @@ def fix_all_bulletin(
         bulletin_list: list[DownloadBulletin] = download_bulletin_list(page_num, False)
         for bulletin_info in reversed(bulletin_list) if is_reversed else bulletin_list:
             content_url: Path | None = download_notice(bulletin_info)
-            bulletin: BulletinDB | None = resolve_notice(
-                content_path=content_url,
-                bulletin_info=bulletin_info,
-                use_ollama=use_ollama
-            )
-            if bulletin:
-                update_bulletin(bulletin_info=bulletin)
+            # 只有当成功获取到本地的 html 文件路径时，才进行下一步的解析入库
+            if content_url:
+                bulletin: BulletinDB | None = resolve_notice(
+                    content_path=content_url,
+                    bulletin_info=bulletin_info,
+                    use_ollama=use_ollama
+                )
+                if bulletin:
+                    update_bulletin(bulletin_info=bulletin)
         return success_response()
     except Exception as e:
         raise HTTPException(status_code=500, detail={"message": "补全失败", "error": str(e)}) from e
