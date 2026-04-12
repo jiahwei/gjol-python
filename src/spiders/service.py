@@ -22,7 +22,11 @@ from src.bulletin.service import query_bulletin
 from src.bulletin_list.schemas import BulletinType, DownloadBulletin
 from src.bulletin_list.models import BulletinList
 from src.bulletin_list.service import get_really_bulletin_date, get_bulletin_type
-from src.nlp.service import predict_paragraph_category, preprocess_text
+from src.nlp.service import (
+    predict_paragraph_category,
+    predict_paragraphs_category_ollama,
+    preprocess_text,
+)
 
 logger = logging.getLogger("spiders_test")
 daily_logger = logging.getLogger("daily")
@@ -77,7 +81,7 @@ def download_notice(bulletin_info: DownloadBulletin | BulletinList) -> Path | No
     except requests.RequestException as e:
         logger.error("请求失败: %s, 错误: %s", url, str(e))
         raise
-    
+
     soup = BeautifulSoup(res, "lxml")
 
     source_file_name = parent_path.joinpath("source.html")
@@ -100,9 +104,9 @@ def download_notice(bulletin_info: DownloadBulletin | BulletinList) -> Path | No
 
     return content_file_name
 
-def _resolve_paragraphs(soup: BeautifulSoup):
+def _resolve_paragraphs(soup: BeautifulSoup, use_ollama: bool = False):
     """分类段落
-    """    
+    """
     details_div = soup.find("div", class_="details")
     if not isinstance(details_div, Tag):
         raise ValueError("details_div 不是 Tag 类型")
@@ -110,9 +114,13 @@ def _resolve_paragraphs(soup: BeautifulSoup):
     if not paragraphs:
         raise ValueError("公告未找到段落内容")
 
-    category_contents: dict[str, list[str]] = {}  
+    category_contents: dict[str, list[str]] = {}
     category_lengths: dict[str, int] = {}
-    # 处理每个段落
+
+    valid_texts: list[str] = []
+    valid_words: list[str] = []
+
+    # 收集有效段落
     for p in paragraphs:
         p_text: str = p.text.strip()
         if not p_text:
@@ -120,29 +128,52 @@ def _resolve_paragraphs(soup: BeautifulSoup):
 
         words = preprocess_text(p_text)
         if words.strip():
-            category = predict_paragraph_category(words)
-            logger.debug("段落分类: %s... -> %s", p_text[:30], category)
+            valid_texts.append(p_text)
+            valid_words.append(words)
 
-            # 将段落添加到对应类型
-            if category not in category_contents:
-                category_contents[category] = []
-                category_lengths[category] = 0
+    if not valid_texts:
+        return category_contents, category_lengths
 
-            category_contents[category].append(p_text)
-            category_lengths[category] += len(p_text)
+    # 批量预测类别
+    if use_ollama:
+        categories = predict_paragraphs_category_ollama(valid_texts)
+        # 本地再加两层保险：
+        # 1. 修正“无更新”误判
+        for i, (text, cat) in enumerate(zip(valid_texts, categories)):
+            if cat == "无更新" and "无更新" not in text:
+                logger.debug("修正模型误判的无更新: %s", text[:30])
+                categories[i] = "格式"
+
+    else:
+        categories = [predict_paragraph_category(w) for w in valid_words]
+
+    # 组装结果
+    for p_text, category in zip(valid_texts, categories):
+        logger.debug("段落分类: %s... -> %s", p_text[:30], category)
+
+        # 将段落添加到对应类型
+        if category not in category_contents:
+            category_contents[category] = []
+            category_lengths[category] = 0
+
+        category_contents[category].append(p_text)
+        category_lengths[category] += len(p_text)
 
     return category_contents, category_lengths
 
 
 
 def resolve_notice(
-    content_path: Path | None, bulletin_info: DownloadBulletin | BulletinList
+    content_path: Path | None,
+    bulletin_info: DownloadBulletin | BulletinList,
+    use_ollama: bool = False,
 ) -> BulletinDB | None:
     """解析公告内容并分类段落
 
     Args:
         content_path (Path | None): 公告content.html的路径
         bulletin_info (DownloadBulletin): 公告信息
+        use_ollama (bool, optional): 是否使用 Ollama 模型分类. Defaults to False.
 
     Returns:
         BulletinDB | None: 解析后的公告对象，如果解析失败则返回None
@@ -159,7 +190,9 @@ def resolve_notice(
         content: str = content_path.read_text(encoding="utf-8")
         soup: BeautifulSoup = BeautifulSoup(content, "html5lib")
         try:
-            category_contents, category_lengths = _resolve_paragraphs(soup)
+            category_contents, category_lengths = _resolve_paragraphs(
+                soup, use_ollama=use_ollama
+            )
         except ValueError as e:
             logger.warning("公告 %s 解析段落时出错: %s", bulletin_info.name, str(e))
             return base_bulletin

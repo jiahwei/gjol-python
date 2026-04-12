@@ -27,15 +27,16 @@ router = APIRouter(
 
 @router.get("/testResolve", response_model=Response[list[BulletinDB]])
 async def test_resolve(
-    test_date: Annotated[str | None, Query(alias="testDate")] = None
+    test_date: Annotated[str | None, Query(alias="testDate")] = "2023-10-11",
+    use_ollama: Annotated[bool, Query(alias="useOllama")] = True
 ) -> Response[list[BulletinDB]]:
     """测试解析公告的路由
     Args:
         test_date (str | None): 测试的日期，默认为None, 表示测试所有公告
+        use_ollama (bool): 是否使用 Ollama 模型分类，默认为 True
     """
     try:
-
-        res_list: list[BulletinDB] = test_resolve_notice(test_date)
+        res_list: list[BulletinDB] = test_resolve_notice(test_date, use_ollama)
         return success_response(res_list)
     except Exception as e:
         raise HTTPException(status_code=500, detail={"message": "测试失败", "error": str(e)}) from e
@@ -64,18 +65,22 @@ def test_bulletin_ranks(version_id: int) -> Response[None]:
 @router.get("/fixAllBulletin", response_model=Response[None])
 def fix_all_bulletin(
     page_num: Annotated[int, Query(alias="pageNum")] = 1,
-    is_reversed: Annotated[bool, Query(alias="reversed")] = False
+    is_reversed: Annotated[bool, Query(alias="reversed")] = False,
+    use_ollama: Annotated[bool, Query(alias="useOllama")] = False
 ) -> Response[None]:
     """补全全部公告
     Args:
         page_num (int, optional): 要下载的公告页号. Defaults to 1.目前最大76页
+        use_ollama (bool): 是否使用 Ollama 模型分类，默认为 False
     """
     try:
         bulletin_list: list[DownloadBulletin] = download_bulletin_list(page_num, False)
         for bulletin_info in reversed(bulletin_list) if is_reversed else bulletin_list:
             content_url: Path | None = download_notice(bulletin_info)
             bulletin: BulletinDB | None = resolve_notice(
-                content_path=content_url, bulletin_info=bulletin_info
+                content_path=content_url,
+                bulletin_info=bulletin_info,
+                use_ollama=use_ollama
             )
             if bulletin:
                 update_bulletin(bulletin_info=bulletin)
