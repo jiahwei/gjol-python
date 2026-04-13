@@ -86,7 +86,7 @@ def predict_paragraph_category(paragraph_text: str) -> str:
     label = label_encoder.inverse_transform(prediction)
     return label[0]
 
-
+# Ollama 模型配置 ，只有本地显卡算力，服务器上使用传统分类模型去预测
 _OLLAMA_GENERATE_URL = "http://localhost:11434/api/generate"
 _OLLAMA_MODEL = "deepseek-r1:14b"
 _OLLAMA_PROMPT_PATH = Path("src/nlp/ollama_paragraph_category_prompt.txt")

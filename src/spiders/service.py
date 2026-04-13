@@ -9,6 +9,7 @@
 import json
 import logging
 import random
+import re
 import time
 from pathlib import Path
 
@@ -38,6 +39,88 @@ header = {
         "Chrome/117.0.0.0 Safari/537.36 Edg/117.0.2045.31"
     )
 }
+
+_FORMAT_PREFIXES = ("各位仙家弟子", "亲爱的仙家弟子", "诸位仙家弟子")
+_FORMAT_PHRASES = ("敬请谅解", "祝大家游戏愉快", "项目组")
+_CONTEXT_CATEGORIES = {
+    ParagraphTopic.STORE.value,
+    ParagraphTopic.PVX.value,
+    ParagraphTopic.PVE.value,
+    ParagraphTopic.PVP.value,
+}
+_ACTIVITY_OR_STORE_ITEM_KEYWORDS = (
+    "活动",
+    "节日",
+    "奖励",
+    "兑换",
+    "限量商品",
+    "不限量商品",
+    "挂件",
+    "头像",
+    "头像框",
+    "外装",
+    "时装",
+    "商人",
+    "传送特效",
+)
+_SKILL_FALSE_POSITIVE_KEYWORDS = ("技能面板", "外装技能", "传送技能", "传送特效")
+
+
+def _is_format_paragraph(text: str) -> bool:
+    """判断是否为公告开头/结尾的格式化文本。"""
+    stripped_text = text.strip()
+    if stripped_text.startswith(_FORMAT_PREFIXES):
+        return True
+    if re.fullmatch(r"\d{4}年\d{1,2}月\d{1,2}日", stripped_text):
+        return True
+    return any(phrase in stripped_text for phrase in _FORMAT_PHRASES)
+
+
+def _find_nearby_context_category(categories: list[str], index: int) -> str | None:
+    """查找当前段落附近最近的强语义上下文分类。"""
+    for left_index in range(index - 1, -1, -1):
+        if categories[left_index] in _CONTEXT_CATEGORIES:
+            return categories[left_index]
+    for right_index in range(index + 1, len(categories)):
+        if categories[right_index] in _CONTEXT_CATEGORIES:
+            return categories[right_index]
+    return None
+
+
+def _looks_like_activity_or_store_item(text: str) -> bool:
+    """判断文本是否更像活动/商城区块里的附属条目。"""
+    return any(keyword in text for keyword in _ACTIVITY_OR_STORE_ITEM_KEYWORDS)
+
+
+def _postprocess_ollama_categories(valid_texts: list[str], categories: list[str]) -> list[str]:
+    """对 LLM 分类结果做少量确定性修正。"""
+    fixed_categories = categories.copy()
+    for i, text in enumerate(valid_texts):
+        if _is_format_paragraph(text):
+            fixed_categories[i] = ParagraphTopic.FORMAT.value
+            continue
+
+        if fixed_categories[i] != ParagraphTopic.SKILL.value:
+            continue
+
+        has_skill_false_positive = any(
+            keyword in text for keyword in _SKILL_FALSE_POSITIVE_KEYWORDS
+        )
+        if not has_skill_false_positive and not _looks_like_activity_or_store_item(text):
+            continue
+
+        nearby_context = _find_nearby_context_category(fixed_categories, i)
+        if nearby_context in {
+            ParagraphTopic.PVX.value,
+            ParagraphTopic.STORE.value,
+        }:
+            logger.debug(
+                "修正职业调整误判: %s -> %s",
+                text[:30],
+                nearby_context,
+            )
+            fixed_categories[i] = nearby_context
+    return fixed_categories
 
 
 
@@ -137,6 +220,7 @@ def _resolve_paragraphs(soup: BeautifulSoup, use_ollama: bool = False):
     # 批量预测类别
     if use_ollama:
         categories = predict_paragraphs_category_ollama(valid_texts)
+        categories = _postprocess_ollama_categories(valid_texts, categories)
         # 本地再加两层保险：
         # 1. 修正“无更新”误判
         for i, (text, cat) in enumerate(zip(valid_texts, categories)):
