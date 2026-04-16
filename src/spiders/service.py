@@ -18,9 +18,11 @@ from bs4 import BeautifulSoup, Tag
 
 from constants import BASEURL, DEFAULT_FLODER_PATH_ABSOLUTE
 from src.bulletin.models import BulletinDB
-from src.bulletin.schemas import ContentTotal,ParagraphTopic
+from src.bulletin.schemas import ContentTotal, ParagraphTopic
 from src.bulletin.service import query_bulletin
 from src.bulletin_list.schemas import BulletinType, DownloadBulletin
+from src.json.schemas import LlmJson
+from src.json.service import save_llm_json_records
 from src.bulletin_list.models import BulletinList
 from src.bulletin_list.service import get_really_bulletin_date, get_bulletin_type
 from src.nlp.service import (
@@ -123,6 +125,41 @@ def _postprocess_ollama_categories(valid_texts: list[str], categories: list[str]
     return fixed_categories
 
 
+def _build_source_id(bulletin_info: DownloadBulletin | BulletinList) -> str:
+    """构造段落标注数据的唯一来源标识。"""
+    return bulletin_info.href
+
+
+def _persist_paragraph_labels(
+    valid_texts: list[str],
+    categories: list[str],
+    source_id: str,
+    bulletin_name: str | None,
+    bulletin_date: str,
+) -> None:
+    """保存逐段分类结果，供后续人工修正。"""
+    if not source_id:
+        logger.warning("source_id 为空，跳过 llm.json 写入")
+        return
+
+    records: list[LlmJson] = []
+    for index, (paragraph_text, category) in enumerate(zip(valid_texts, categories)):
+        paragraph_topic = ParagraphTopic(category)
+        records.append(
+            LlmJson(
+                source_id=source_id,
+                bulletin_name=bulletin_name,
+                bulletin_date=bulletin_date,
+                paragraph_index=index,
+                paragraph_text=paragraph_text,
+                predicted_label=paragraph_topic,
+                corrected_label=paragraph_topic,
+            )
+        )
+    save_llm_json_records(records, source_id)
+    logger.info("llm.json 写入完成: source_id=%s, count=%d", source_id, len(records))
+
+
 
 def download_notice(bulletin_info: DownloadBulletin | BulletinList) -> Path | None:
     """下载公告内容,生成content.html和source.html
@@ -187,7 +224,14 @@ def download_notice(bulletin_info: DownloadBulletin | BulletinList) -> Path | No
 
     return content_file_name
 
-def _resolve_paragraphs(soup: BeautifulSoup, use_ollama: bool = False):
+def _resolve_paragraphs(
+    soup: BeautifulSoup,
+    use_ollama: bool = False,
+    save_json: bool = False,
+    source_id: str = "",
+    bulletin_name: str | None = None,
+    bulletin_date: str = "",
+):
     """分类段落
     """
     details_div = soup.find("div", class_="details")
@@ -231,9 +275,18 @@ def _resolve_paragraphs(soup: BeautifulSoup, use_ollama: bool = False):
     else:
         categories = [predict_paragraph_category(w) for w in valid_words]
 
+    if save_json:
+        _persist_paragraph_labels(
+            valid_texts,
+            categories,
+            source_id,
+            bulletin_name,
+            bulletin_date,
+        )
+
     # 组装结果
     for p_text, category in zip(valid_texts, categories):
-        logger.debug("段落分类: %s... -> %s", p_text[:30], category)
+        logger.info("段落分类: %s... -> %s", p_text[:30], category)
 
         # 将段落添加到对应类型
         if category not in category_contents:
@@ -251,6 +304,7 @@ def resolve_notice(
     content_path: Path | None,
     bulletin_info: DownloadBulletin | BulletinList,
     use_ollama: bool = False,
+    save_json: bool = False,
 ) -> BulletinDB | None:
     """解析公告内容并分类段落
 
@@ -258,6 +312,7 @@ def resolve_notice(
         content_path (Path | None): 公告content.html的路径
         bulletin_info (DownloadBulletin): 公告信息
         use_ollama (bool, optional): 是否使用 Ollama 模型分类. Defaults to False.
+        save_json (bool, optional): 是否保存json文件. Defaults to False.
 
     Returns:
         BulletinDB | None: 解析后的公告对象，如果解析失败则返回None
@@ -269,13 +324,19 @@ def resolve_notice(
     try:
         # 获取基础公告信息
         base_bulletin: BulletinDB = query_bulletin(bulletin_info=bulletin_info)
+        source_id = _build_source_id(bulletin_info)
 
         # 读取并解析HTML内容
         content: str = content_path.read_text(encoding="utf-8")
         soup: BeautifulSoup = BeautifulSoup(content, "html5lib")
         try:
             category_contents, category_lengths = _resolve_paragraphs(
-                soup, use_ollama=use_ollama
+                soup,
+                use_ollama=use_ollama,
+                save_json=save_json,
+                source_id=source_id,
+                bulletin_name=bulletin_info.name,
+                bulletin_date=bulletin_info.date,
             )
         except ValueError as e:
             logger.warning("公告 %s 解析段落时出错: %s", bulletin_info.name, str(e))

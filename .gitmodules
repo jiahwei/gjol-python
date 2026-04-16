@@ -4,3 +4,6 @@
 [submodule "bulletins"]
 	path = bulletins
 	url = git@github.com:jiahwei/gjol-bulletins.git
+[submodule "llm-dev-web"]
+	path = llm-dev-web
+	url = git@github.com:jiahwei/llm-dev-web.git

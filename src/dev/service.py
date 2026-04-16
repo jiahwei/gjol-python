@@ -22,13 +22,14 @@ logger = logging.getLogger("nlp_test")
 daily_logger = logging.getLogger("daily")
 
 def test_resolve_notice(
-    test_date: str | None = None, use_ollama: bool = False
+    test_date: str | None = None, use_ollama: bool = False, save_json: bool = False
 ) -> list[BulletinDB]:
     """下载公告并处理公告数据，有输入日期则测试该日期，没有则测试全部公告
 
     Args:
         test_date (str | None, optional): 测试日期. Defaults to None.
         use_ollama (bool, optional): 是否使用 Ollama 模型分类. Defaults to False.
+        save_json (bool, optional): 是否保存json文件. Defaults to False.
 
     Returns:
         list[BulletinDB]: 解析后的公告列表
@@ -46,7 +47,8 @@ def test_resolve_notice(
             bulletin: BulletinDB | None = resolve_notice(
                 content_path=content_url,
                 bulletin_info=res,
-                use_ollama=use_ollama
+                use_ollama=use_ollama,
+                save_json=save_json
             )
             if bulletin is not None:
                 res_list.append(bulletin)

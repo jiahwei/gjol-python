@@ -51,8 +51,8 @@ Invoke-WebRequest -UseBasicParsing -Uri "https://raw.githubusercontent.com/pyenv
 pyenv virtualenv 3.11.8 gjol-server-311
 pyenv activate gjol-server-311
 # windows
-pyenv-venv install 3.11.8 gjol-server-311
-pyenv-venv activate gjol-server-311
+conda create -n gjol-server-311 python=3.11.8
+conda activate gjol-server-311
 ```
 
 ## 下载依赖
@@ -83,3 +83,4 @@ uvicorn src.main:app --host :: --port 8000
 ```bash
 gunicorn src.main:app -c gunicorn.py
 ```
+
