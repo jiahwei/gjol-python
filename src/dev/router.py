@@ -28,17 +28,17 @@ router = APIRouter(
 @router.get("/testResolve", response_model=Response[list[BulletinDB]])
 async def test_resolve(
     test_date: Annotated[str | None, Query(alias="testDate")] = "2018-08-16",
-    use_ollama: Annotated[bool, Query(alias="useOllama")] = True,
+    use_lm_studio: Annotated[bool, Query(alias="useLmStudio")] = True,
     save_json: Annotated[bool, Query(alias="saveJson")] = True
 ) -> Response[list[BulletinDB]]:
     """测试解析公告的路由
     Args:
         test_date (str | None): 测试的日期，默认为None, 表示测试所有公告
-        use_ollama (bool): 是否使用 Ollama 模型分类，默认为 True
+        use_lm_studio (bool): 是否使用 LM Studio 模型分类，默认为 True
         save_json (bool): 是否保存解析后的公告数据到 JSON 文件，默认为 True
     """
     try:
-        res_list: list[BulletinDB] = test_resolve_notice(test_date, use_ollama, save_json)
+        res_list: list[BulletinDB] = test_resolve_notice(test_date, use_lm_studio, save_json)
         return success_response(res_list)
     except Exception as e:
         raise HTTPException(status_code=500, detail={"message": "测试失败", "error": str(e)}) from e
@@ -68,12 +68,12 @@ def test_bulletin_ranks(version_id: int) -> Response[None]:
 def fix_all_bulletin(
     page_num: Annotated[int, Query(alias="pageNum")] = 1,
     is_reversed: Annotated[bool, Query(alias="reversed")] = False,
-    use_ollama: Annotated[bool, Query(alias="useOllama")] = False
+    use_lm_studio: Annotated[bool, Query(alias="useLmStudio")] = False
 ) -> Response[None]:
     """补全全部公告
     Args:
         page_num (int, optional): 要下载的公告页号. Defaults to 1.目前最大76页
-        use_ollama (bool): 是否使用 Ollama 模型分类，默认为 False
+        use_lm_studio (bool): 是否使用 LM Studio 模型分类，默认为 False
     """
     try:
         bulletin_list: list[DownloadBulletin] = download_bulletin_list(page_num, False)
@@ -84,7 +84,7 @@ def fix_all_bulletin(
                 bulletin: BulletinDB | None = resolve_notice(
                     content_path=content_url,
                     bulletin_info=bulletin_info,
-                    use_ollama=use_ollama
+                    use_lm_studio=use_lm_studio
                 )
                 if bulletin:
                     update_bulletin(bulletin_info=bulletin)

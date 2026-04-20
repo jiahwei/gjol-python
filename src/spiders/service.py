@@ -27,7 +27,7 @@ from src.bulletin_list.models import BulletinList
 from src.bulletin_list.service import get_really_bulletin_date, get_bulletin_type
 from src.nlp.service import (
     predict_paragraph_category,
-    predict_paragraphs_category_ollama,
+    predict_paragraphs_category_lm_studio,
     preprocess_text,
 )
 
@@ -94,7 +94,7 @@ def _looks_like_activity_or_store_item(text: str) -> bool:
     return any(keyword in text for keyword in _ACTIVITY_OR_STORE_ITEM_KEYWORDS)
 
 
-def _postprocess_ollama_categories(valid_texts: list[str], categories: list[str]) -> list[str]:
+def _postprocess_lm_studio_categories(valid_texts: list[str], categories: list[str]) -> list[str]:
     """对 LLM 分类结果做少量确定性修正。"""
     fixed_categories = categories.copy()
     for i, text in enumerate(valid_texts):
@@ -226,7 +226,7 @@ def download_notice(bulletin_info: DownloadBulletin | BulletinList) -> Path | No
 
 def _resolve_paragraphs(
     soup: BeautifulSoup,
-    use_ollama: bool = False,
+    use_lm_studio: bool = False,
     save_json: bool = False,
     source_id: str = "",
     bulletin_name: str | None = None,
@@ -262,9 +262,9 @@ def _resolve_paragraphs(
         return category_contents, category_lengths
 
     # 批量预测类别
-    if use_ollama:
-        categories = predict_paragraphs_category_ollama(valid_texts)
-        categories = _postprocess_ollama_categories(valid_texts, categories)
+    if use_lm_studio:
+        categories = predict_paragraphs_category_lm_studio(valid_texts)
+        categories = _postprocess_lm_studio_categories(valid_texts, categories)
         # 本地再加两层保险：
         # 1. 修正“无更新”误判
         for i, (text, cat) in enumerate(zip(valid_texts, categories)):
@@ -303,7 +303,7 @@ def _resolve_paragraphs(
 def resolve_notice(
     content_path: Path | None,
     bulletin_info: DownloadBulletin | BulletinList,
-    use_ollama: bool = False,
+    use_lm_studio: bool = False,
     save_json: bool = False,
 ) -> BulletinDB | None:
     """解析公告内容并分类段落
@@ -311,7 +311,7 @@ def resolve_notice(
     Args:
         content_path (Path | None): 公告content.html的路径
         bulletin_info (DownloadBulletin): 公告信息
-        use_ollama (bool, optional): 是否使用 Ollama 模型分类. Defaults to False.
+        use_lm_studio (bool, optional): 是否使用 LM Studio 模型分类. Defaults to False.
         save_json (bool, optional): 是否保存json文件. Defaults to False.
 
     Returns:
@@ -332,7 +332,7 @@ def resolve_notice(
         try:
             category_contents, category_lengths = _resolve_paragraphs(
                 soup,
-                use_ollama=use_ollama,
+                use_lm_studio=use_lm_studio,
                 save_json=save_json,
                 source_id=source_id,
                 bulletin_name=bulletin_info.name,

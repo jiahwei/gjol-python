@@ -23,7 +23,7 @@ def periodic_function():
     return
 
 
-def dayily_fun(use_ollama: bool = False) -> None:
+def dayily_fun(use_lm_studio: bool = False) -> None:
     """每周四定时执行的任务"""
     bulletin_list: list[DownloadBulletin] = download_bulletin_list()
     for bulletin_info in bulletin_list:
@@ -31,7 +31,7 @@ def dayily_fun(use_ollama: bool = False) -> None:
         bulletin: BulletinDB | None  = resolve_notice(
             content_path=content_url,
             bulletin_info=bulletin_info,
-            use_ollama=use_ollama
+            use_lm_studio=use_lm_studio
         )
         if bulletin:
             update_bulletin(bulletin_info=bulletin)
