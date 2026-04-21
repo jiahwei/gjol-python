@@ -90,6 +90,16 @@ class BulletinInVersion(BaseBulletinInfo):
     type: str
 
 
+class BulletinListItem(BaseModel):
+    """公告列表页返回的简要公告信息。"""
+
+    id: int | None
+    name: str
+    href: str
+    date: str
+    type: str = Field(default=BulletinType.OTHER.value)
+
+
 class ListInVersionReturn(BaseModel):
     """接口“bulletins/listInVersion”的返回参数
 

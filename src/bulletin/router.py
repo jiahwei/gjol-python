@@ -11,11 +11,13 @@ from collections.abc import Sequence
 
 from src.bulletin.models import BulletinDB
 from src.bulletin.schemas import (
+    BulletinListItem,
     BulletinInfo,
     DatePayload,
     ListInVersionReturn,
     BulletinInVersion
 )
+from src.bulletin_list.models import BulletinList
 from src.database import get_session
 from src.version.models import Version
 from src.utils.http import success_response
@@ -169,3 +171,24 @@ def new_bulletin(session: Session = Depends(get_session)) -> Response[BulletinIn
         versionName=version_info.name,
     )
     return success_response(bulletin_info_obj)
+
+
+@router.get("/listAll", response_model=Response[list[BulletinListItem]])
+def list_all_bulletins(
+    session: Session = Depends(get_session),
+) -> Response[list[BulletinListItem]]:
+    """返回当前数据库中的全部公告列表。"""
+    statement = select(BulletinList).order_by(desc(BulletinList.date), desc(BulletinList.id))
+    bulletins = session.exec(statement).all()
+    return success_response(
+        [
+            BulletinListItem(
+                id=bulletin.id,
+                name=bulletin.name,
+                href=bulletin.href,
+                date=bulletin.date,
+                type=bulletin.type,
+            )
+            for bulletin in bulletins
+        ]
+    )

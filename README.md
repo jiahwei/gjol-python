@@ -83,4 +83,3 @@ uvicorn src.main:app --host :: --port 8000
 ```bash
 gunicorn src.main:app -c gunicorn.py
 ```
-
