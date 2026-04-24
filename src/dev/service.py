@@ -21,18 +21,20 @@ from src.spiders.service import download_notice, resolve_notice
 logger = logging.getLogger("nlp_test")
 daily_logger = logging.getLogger("daily")
 
-def test_resolve_notice(
+def run_preprocess_task(
     test_date: str | None = None, use_lm_studio: bool = False, save_json: bool = False
 ) -> list[BulletinDB]:
-    """下载公告并处理公告数据，有输入日期则测试该日期，没有则测试全部公告
+    """下载并解析公告数据。
+
+    如果传入日期，只处理该日期的公告；如果不传日期，则处理全部公告。
 
     Args:
-        test_date (str | None, optional): 测试日期. Defaults to None.
-        use_lm_studio (bool, optional): 是否使用 LM Studio 模型分类. Defaults to False.
-        save_json (bool, optional): 是否保存json文件. Defaults to False.
+        test_date: 指定要处理的公告日期；为空时处理全部公告。
+        use_lm_studio: 是否使用 LM Studio 进行段落分类。
+        save_json: 是否保存逐段分类结果，供后续人工复核。
 
     Returns:
-        list[BulletinDB]: 解析后的公告列表
+        解析成功的公告列表。
     """
     with Session(engine) as session:
         statement = (
@@ -55,8 +57,16 @@ def test_resolve_notice(
         return res_list
 
 
+def test_resolve_notice(
+    test_date: str | None = None, use_lm_studio: bool = False, save_json: bool = False
+) -> list[BulletinDB]:
+    """兼容旧接口名称，内部复用公告预处理任务逻辑。"""
+    return run_preprocess_task(test_date, use_lm_studio, save_json)
+
+
 
 def bulletin_type():
+    """输出当前被标记为 other 类型的公告，用于排查公告类型识别。"""
     with Session(engine) as session:
         statement = select(BulletinList).where(BulletinList.type == BulletinType.OTHER)
         buletin_list = session.exec(statement).all()
@@ -71,6 +81,7 @@ recycle_bin_path = Path(DEFAULT_FLODER_PATH_ABSOLUTE).joinpath("recycleBin")
 
 
 def resolve_file():
+    """扫描本地 routine 公告文件，检查标题推断出的公告类型。"""
     root_dir_path = Path(DEFAULT_FLODER_PATH_ABSOLUTE).joinpath("routine")
     # root_dir_path = Path(recycle_bin_path).joinpath('routine')
     for root, dirs, files in os.walk(root_dir_path):
@@ -97,6 +108,13 @@ def resolve_file():
 
 
 def rename_file(type:str="routine"):
+    """根据公告标题中的日期推断本地目录应使用的日期。
+
+    当前函数只记录推断结果，实际重命名逻辑仍保留为注释，避免误改本地文件。
+
+    Args:
+        type: 要扫描的公告类型目录。
+    """
     root_dir_path = Path(DEFAULT_FLODER_PATH_ABSOLUTE).joinpath(type)
     for root, dirs, files in os.walk(root_dir_path):
         if root != f"bulletins/{type}" and "source.html" in files:

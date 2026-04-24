@@ -14,6 +14,9 @@ from src.bulletin.router import router as bulletin_router
 from src.dev.router import router as dev_router
 from src.auth.router import router as auth_router
 from src.json.router import router as json_router
+from src.preprocess.router import router as preprocess_router
+from src.preprocess.service import ensure_preprocess_task_table, recover_interrupted_preprocess_tasks
+from src.preprocess.worker import start_preprocess_worker, stop_preprocess_worker
 # 中间件
 from src.utils.http import LoggingMiddleware,setup_cors_middleware,http_exception_wrapper
 from src.utils.http import docs_url,redoc_url,openapi_url
@@ -33,9 +36,13 @@ async def lifespan(app: FastAPI):
     # Load the ML model
     ml_models["create_db_and_tables"] = create_db_and_tables
     ml_models["apscheduler_start"] = apscheduler_start
+    ensure_preprocess_task_table()
+    recover_interrupted_preprocess_tasks()
     await apscheduler_start()
+    await start_preprocess_worker()
     yield
     # Clean up the ML models and release resources
+    await stop_preprocess_worker()
     scheduler.shutdown()
     ml_models.clear()
 
@@ -61,6 +68,7 @@ app.include_router(bulletin_router, prefix="/bulletins", tags=["公告"])
 app.include_router(dev_router, prefix="/dev", tags=["开发"])
 app.include_router(auth_router, prefix="/auth", tags=["认证"])
 app.include_router(json_router, prefix="/json", tags=["标注"])
+app.include_router(preprocess_router, prefix="/preprocess", tags=["预处理"])
 
 
 

@@ -1,4 +1,4 @@
-"""Natural language processing helpers for bulletin paragraph classification."""
+"""公告段落分类相关的自然语言处理工具。"""
 
 import functools
 import logging
@@ -35,8 +35,12 @@ LM_STUDIO_MODEL = os.getenv("LM_STUDIO_MODEL", "").strip()
 LM_STUDIO_PROMPT_PATH = Path("src/nlp/lm_studio_paragraph_category_prompt.txt")
 
 
+class LMStudioPredictionError(RuntimeError):
+    """LM Studio 分类失败。"""
+
+
 def preprocess_text(text: str) -> str:
-    """Normalize text, tokenize with THULAC, and remove stopwords."""
+    """标准化文本、使用 THULAC 分词，并移除停用词。"""
     text = re.sub(r"\s+", " ", text)
     text = re.sub(r"[^\w\s]", "", text)
     text = text.strip()
@@ -48,7 +52,7 @@ def preprocess_text(text: str) -> str:
 
 
 def load_stopwords() -> set[str]:
-    """Load Chinese stopwords from disk."""
+    """从本地文件加载中文停用词。"""
     stopwords = set()
     stopwords_path = Path("src/nlp/cn_stopwords.txt")
     with open(stopwords_path, "r", encoding="utf-8") as f:
@@ -58,7 +62,7 @@ def load_stopwords() -> set[str]:
 
 
 def predict_paragraph_category(paragraph_text: str) -> str:
-    """Predict a paragraph category with the traditional classifier."""
+    """使用传统机器学习分类器预测单个段落类型。"""
     if "无更新" in paragraph_text:
         return "无更新"
 
@@ -70,14 +74,17 @@ def predict_paragraph_category(paragraph_text: str) -> str:
 
 @functools.lru_cache(maxsize=1)
 def _get_lm_studio_prompt_template() -> str:
+    """读取 LM Studio 段落分类提示词模板。"""
     return LM_STUDIO_PROMPT_PATH.read_text(encoding="utf-8")
 
 
 def _format_indexed_paragraphs(paragraphs: list[str]) -> str:
+    """将段落格式化为带下标的提示词片段。"""
     return "\n".join(f"[{i}] {paragraph}" for i, paragraph in enumerate(paragraphs))
 
 
 def _build_lm_studio_category_prompt(paragraphs: list[str], categories: list[str]) -> str:
+    """根据段落和候选分类构造 LM Studio 提示词。"""
     template = _get_lm_studio_prompt_template()
     return template.format(
         categories=", ".join(categories),
@@ -86,6 +93,7 @@ def _build_lm_studio_category_prompt(paragraphs: list[str], categories: list[str
 
 
 def _strip_think_tags(text: str) -> str:
+    """移除模型输出中的 think 标签内容。"""
     if "</think>" in text:
         return text.split("</think>")[-1].strip()
     return text
@@ -93,6 +101,7 @@ def _strip_think_tags(text: str) -> str:
 
 @functools.lru_cache(maxsize=1)
 def _get_lm_studio_model() -> str | None:
+    """获取 LM Studio 当前可用的模型名称。"""
     if LM_STUDIO_MODEL:
         logger.info("Using LM Studio model from environment: %s", LM_STUDIO_MODEL)
         return LM_STUDIO_MODEL
@@ -121,10 +130,11 @@ def _get_lm_studio_model() -> str | None:
     return None
 
 
-def _lm_studio_generate(prompt: str) -> str | None:
+def _lm_studio_generate(prompt: str) -> str:
+    """调用 LM Studio 生成段落分类文本。"""
     model_name = _get_lm_studio_model()
     if not model_name:
-        return None
+        raise LMStudioPredictionError("LM Studio 未找到可用模型")
 
     payload = {
         "model": model_name,
@@ -143,10 +153,10 @@ def _lm_studio_generate(prompt: str) -> str | None:
         result = response.json()
     except requests.RequestException as exc:
         logger.error("Requesting LM Studio chat failed: %s", exc)
-        return None
+        raise LMStudioPredictionError(f"LM Studio 请求失败: {exc}") from exc
     except ValueError as exc:
         logger.error("Parsing LM Studio chat response failed: %s", exc)
-        return None
+        raise LMStudioPredictionError(f"LM Studio 响应解析失败: {exc}") from exc
 
     output = result.get("output", [])
     message_parts: list[str] = []
@@ -160,12 +170,13 @@ def _lm_studio_generate(prompt: str) -> str | None:
     prediction = "\n".join(message_parts).strip()
     if not prediction:
         logger.error("LM Studio response did not contain any usable message content")
-        return None
+        raise LMStudioPredictionError("LM Studio 响应没有可用内容")
 
     return _strip_think_tags(prediction)
 
 
 def _match_category(cat_text: str, categories: list[str], default: str = "格式") -> str:
+    """从模型输出文本中匹配合法分类。"""
     for category in categories:
         if category in cat_text:
             return category
@@ -173,6 +184,7 @@ def _match_category(cat_text: str, categories: list[str], default: str = "格式
 
 
 def _parse_indexed_categories(prediction: str, categories: list[str]) -> dict[int, str]:
+    """解析 LM Studio 返回的下标分类结果。"""
     category_map: dict[int, str] = {}
     for raw_line in prediction.splitlines():
         line = raw_line.strip()
@@ -186,11 +198,8 @@ def _parse_indexed_categories(prediction: str, categories: list[str]) -> dict[in
     return category_map
 
 
-def _fallback_categories(paragraphs: list[str]) -> list[str]:
-    return [predict_paragraph_category(preprocess_text(paragraph)) for paragraph in paragraphs]
-
-
 def _fill_missing_categories(paragraphs: list[str], category_map: dict[int, str]) -> list[str]:
+    """补齐 LM Studio 未返回的段落分类。"""
     final_categories: list[str] = []
     last_category: str | None = None
     for index, paragraph in enumerate(paragraphs):
@@ -204,15 +213,13 @@ def _fill_missing_categories(paragraphs: list[str], category_map: dict[int, str]
 
 
 def predict_paragraphs_category_lm_studio(paragraphs: list[str]) -> list[str]:
-    """Predict paragraph categories with LM Studio and keep the old ML model as fallback."""
+    """使用 LM Studio 批量预测段落类型。"""
     if not paragraphs:
         return []
 
     categories = [topic.value for topic in ParagraphTopic]
     prompt = _build_lm_studio_category_prompt(paragraphs, categories)
     prediction = _lm_studio_generate(prompt)
-    if not prediction:
-        return _fallback_categories(paragraphs)
 
     category_map = _parse_indexed_categories(prediction, categories)
     return _fill_missing_categories(paragraphs, category_map)

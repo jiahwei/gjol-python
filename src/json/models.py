@@ -1,9 +1,16 @@
 """标注模块数据库模型。"""
 
-from datetime import datetime
+from datetime import UTC, datetime, timedelta, timezone
 
 from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, SQLModel
+
+BEIJING_TIMEZONE = timezone(timedelta(hours=8))
+
+
+def now_beijing_naive() -> datetime:
+    """返回北京时间的 naive datetime，便于 SQLite 可读展示。"""
+    return datetime.now(UTC).astimezone(BEIJING_TIMEZONE).replace(tzinfo=None)
 
 
 class LlmPreprocessRecord(SQLModel, table=True):
@@ -19,7 +26,7 @@ class LlmPreprocessRecord(SQLModel, table=True):
     paragraph_index: int = Field(index=True)
     paragraph_text: str = ""
     predicted_label: str
-    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    created_at: datetime = Field(default_factory=now_beijing_naive, nullable=False)
 
 
 class LlmReviewRecord(SQLModel, table=True):
@@ -38,4 +45,4 @@ class LlmReviewRecord(SQLModel, table=True):
     corrected_label: str
     status: str
     review_note: str = ""
-    reviewed_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    reviewed_at: datetime = Field(default_factory=now_beijing_naive, nullable=False)

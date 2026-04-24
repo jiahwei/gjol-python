@@ -8,7 +8,7 @@ from typing import Annotated
 from fastapi import APIRouter, Query,HTTPException,Depends
 
 from src.bulletin.models import BulletinDB
-from src.dev.service import test_resolve_notice
+from src.dev.service import run_preprocess_task
 from src.nlp.train_model import train_model
 from src.version.service import fix_bulletin_ranks
 from src.bulletin.service import update_bulletin
@@ -38,7 +38,7 @@ async def test_resolve(
         save_json (bool): 是否保存解析后的公告数据到 JSON 文件，默认为 True
     """
     try:
-        res_list: list[BulletinDB] = test_resolve_notice(test_date, use_lm_studio, save_json)
+        res_list: list[BulletinDB] = run_preprocess_task(test_date, use_lm_studio, save_json)
         return success_response(res_list)
     except Exception as e:
         raise HTTPException(status_code=500, detail={"message": "测试失败", "error": str(e)}) from e
