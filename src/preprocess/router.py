@@ -15,6 +15,7 @@ from src.preprocess.service import (
     InvalidTaskStateError,
     PreprocessTaskNotFoundError,
     create_preprocess_task,
+    delete_preprocess_task,
     get_preprocess_task,
     list_preprocess_tasks,
     retry_preprocess_task,
@@ -86,3 +87,16 @@ def retry_preprocess_task_route(task_id: str) -> Response[PreprocessTask]:
         ) from e
     except Exception as e:
         raise HTTPException(status_code=500, detail={"message": "重试任务失败", "error": str(e)}) from e
+
+
+@router.delete("/tasks/{task_id}", response_model=Response[PreprocessTask])
+def delete_preprocess_task_route(task_id: str) -> Response[PreprocessTask]:
+    """删除一个预处理队列任务。"""
+    try:
+        return success_response(delete_preprocess_task(task_id))
+    except PreprocessTaskNotFoundError as e:
+        raise HTTPException(status_code=404, detail={"message": "任务不存在", "taskId": str(e)}) from e
+    except InvalidTaskStateError as e:
+        raise HTTPException(status_code=409, detail={"message": "运行中的任务不能删除", "taskId": str(e)}) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail={"message": "删除任务失败", "error": str(e)}) from e

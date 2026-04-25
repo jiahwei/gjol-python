@@ -22,7 +22,10 @@ logger = logging.getLogger("nlp_test")
 daily_logger = logging.getLogger("daily")
 
 def run_preprocess_task(
-    test_date: str | None = None, use_lm_studio: bool = False, save_json: bool = False
+    test_date: str | None = None,
+    use_lm_studio: bool = False,
+    save_json: bool = False,
+    target_name: str | None = None,
 ) -> list[BulletinDB]:
     """下载并解析公告数据。
 
@@ -37,14 +40,23 @@ def run_preprocess_task(
         解析成功的公告列表。
     """
     with Session(engine) as session:
-        statement = (
-            select(BulletinList)
-            if test_date is None
-            else select(BulletinList).where(BulletinList.date == test_date)
-        )
+        statement = select(BulletinList)
+        if test_date is not None:
+            statement = statement.where(BulletinList.date == test_date)
+        if target_name:
+            statement = statement.where(BulletinList.name == target_name)
+
         buletin_list: Sequence[BulletinList] = session.exec(statement).all()
         res_list: list[BulletinDB] = []
+        failed_names: list[str] = []
+        attempted_count = 0
+
         for res in buletin_list:
+            bulletin_type = get_bulletin_type(res.name)
+            if bulletin_type in {BulletinType.CIRCULAR, BulletinType.OTHER}:
+                continue
+
+            attempted_count += 1
             content_url: Path | None = download_notice(res)
             bulletin: BulletinDB | None = resolve_notice(
                 content_path=content_url,
@@ -54,6 +66,16 @@ def run_preprocess_task(
             )
             if bulletin is not None:
                 res_list.append(bulletin)
+            else:
+                failed_names.append(res.name)
+
+        if target_name and not buletin_list:
+            raise RuntimeError(f"未找到目标公告: {target_name}")
+
+        if attempted_count > 0 and not res_list:
+            failed_summary = "、".join(failed_names) if failed_names else "全部公告"
+            raise RuntimeError(f"预处理没有成功解析任何公告: {failed_summary}")
+
         return res_list
 
 

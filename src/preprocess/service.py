@@ -211,6 +211,23 @@ def retry_preprocess_task(task_id: str) -> PreprocessTask:
         return _record_to_task(record)
 
 
+def delete_preprocess_task(task_id: str) -> PreprocessTask:
+    """删除一个非运行中的预处理任务。"""
+    with Session(engine) as session:
+        record = _get_task_record_in_session(session, task_id)
+        if record is None:
+            raise PreprocessTaskNotFoundError(task_id)
+
+        if record.status == PreprocessTaskStatus.RUNNING.value:
+            raise InvalidTaskStateError(task_id)
+
+        task = _record_to_task(record)
+        session.delete(record)
+        session.commit()
+
+        return task
+
+
 def acquire_next_preprocess_task() -> PreprocessTask | None:
     """取出最早的 queued 任务并标记为 running。"""
     with Session(engine) as session:

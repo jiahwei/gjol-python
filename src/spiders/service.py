@@ -33,6 +33,7 @@ from src.nlp.service import (
 
 logger = logging.getLogger("spiders_test")
 daily_logger = logging.getLogger("daily")
+lm_studio_result_logger = logging.getLogger("lm_studio_result")
 
 header = {
     "User-Agent": (
@@ -123,6 +124,39 @@ def _postprocess_lm_studio_categories(valid_texts: list[str], categories: list[s
             )
             fixed_categories[i] = nearby_context
     return fixed_categories
+
+
+def _log_lm_studio_categories(
+    valid_texts: list[str],
+    categories: list[str],
+    source_id: str,
+    bulletin_name: str | None,
+    bulletin_date: str,
+    stage: str,
+) -> None:
+    """Record LM Studio category results with complete paragraph text."""
+    lm_studio_result_logger.info(
+        "LM Studio %s result start: source_id=%s, bulletin_name=%s, bulletin_date=%s, count=%d",
+        stage,
+        source_id,
+        bulletin_name,
+        bulletin_date,
+        len(valid_texts),
+    )
+    for index, (paragraph_text, category) in enumerate(zip(valid_texts, categories)):
+        lm_studio_result_logger.info(
+            "stage=%s index=%d category=%s paragraph=%s",
+            stage,
+            index,
+            category,
+            paragraph_text,
+        )
+    lm_studio_result_logger.info(
+        "LM Studio %s result end: source_id=%s, count=%d",
+        stage,
+        source_id,
+        len(valid_texts),
+    )
 
 
 def _build_source_id(bulletin_info: DownloadBulletin | BulletinList) -> str:
@@ -264,6 +298,14 @@ def _resolve_paragraphs(
     # 批量预测类别
     if use_lm_studio:
         categories = predict_paragraphs_category_lm_studio(valid_texts)
+        _log_lm_studio_categories(
+            valid_texts,
+            categories,
+            source_id,
+            bulletin_name,
+            bulletin_date,
+            "raw",
+        )
         categories = _postprocess_lm_studio_categories(valid_texts, categories)
         # 本地再加两层保险：
         # 1. 修正“无更新”误判
@@ -271,6 +313,15 @@ def _resolve_paragraphs(
             if cat == "无更新" and "无更新" not in text:
                 logger.debug("修正模型误判的无更新: %s", text[:30])
                 categories[i] = "格式"
+
+        _log_lm_studio_categories(
+            valid_texts,
+            categories,
+            source_id,
+            bulletin_name,
+            bulletin_date,
+            "postprocessed",
+        )
 
     else:
         categories = [predict_paragraph_category(w) for w in valid_words]

@@ -32,6 +32,7 @@ LM_STUDIO_BASE_URL = os.getenv("LM_STUDIO_BASE_URL", "http://127.0.0.1:1234")
 LM_STUDIO_CHAT_URL = f"{LM_STUDIO_BASE_URL.rstrip('/')}/api/v1/chat"
 LM_STUDIO_MODELS_URL = f"{LM_STUDIO_BASE_URL.rstrip('/')}/api/v1/models"
 LM_STUDIO_MODEL = os.getenv("LM_STUDIO_MODEL", "").strip()
+LM_STUDIO_CHAT_TIMEOUT = int(os.getenv("LM_STUDIO_CHAT_TIMEOUT", "600"))
 LM_STUDIO_PROMPT_PATH = Path("src/nlp/lm_studio_paragraph_category_prompt.txt")
 
 
@@ -143,12 +144,16 @@ def _lm_studio_generate(prompt: str) -> str:
         "temperature": 0.0,
         "top_p": 0.1,
         "repeat_penalty": 1.1,
-        "max_output_tokens": 1024,
+        "max_output_tokens": 4096,
         "store": False,
     }
 
     try:
-        response = requests.post(LM_STUDIO_CHAT_URL, json=payload, timeout=120)
+        response = requests.post(
+            LM_STUDIO_CHAT_URL,
+            json=payload,
+            timeout=LM_STUDIO_CHAT_TIMEOUT,
+        )
         response.raise_for_status()
         result = response.json()
     except requests.RequestException as exc:

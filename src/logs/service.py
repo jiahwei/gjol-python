@@ -16,6 +16,7 @@ http_log_path: Path = Path("logs/http.log")
 nlp_test_path: Path = Path("logs/nlp_test.log")
 spiders_test_path: Path = Path("logs/spiders_test.log")
 spiders_history_path: Path = Path("logs/spiders_history.log")
+lm_studio_result_path: Path = Path("logs/lm_studio_result.log")
 daily_path: Path = Path("logs/daily.log")
 train_path: Path = Path("logs/train.log")
 
@@ -26,6 +27,7 @@ for log_file in [
     nlp_test_path,
     spiders_test_path,
     spiders_history_path,
+    lm_studio_result_path,
     daily_path,
     train_path,
 ]:
@@ -84,6 +86,14 @@ LOGGING_CONFIG = {
             "encoding": "utf-8",
             "mode": "a",
         },
+        "lm_studio_result_handler": {
+            "class": "logging.FileHandler",
+            "level": "DEBUG",
+            "formatter": "verbose",
+            "filename": str(lm_studio_result_path),
+            "encoding": "utf-8",
+            "mode": "a",
+        },
         "daily_handler": {
             "class": "logging.FileHandler",
             "level": "DEBUG",
@@ -114,6 +124,11 @@ LOGGING_CONFIG = {
         },
         "spiders_history": {
             "handlers": ["spiders_history_handler"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+        "lm_studio_result": {
+            "handlers": ["lm_studio_result_handler"],
             "level": "DEBUG",
             "propagate": False,
         },
@@ -151,6 +166,7 @@ def setup_logging():
                 "nlp_test",
                 "spiders_test",
                 "spiders_history",
+                "lm_studio_result",
                 "daily",
                 "train",
             ):

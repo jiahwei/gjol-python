@@ -97,6 +97,7 @@ async def _run_task(task: PreprocessTask) -> None:
             task.target_date,
             task.use_lm_studio,
             task.save_json,
+            task.target_name,
         )
         await asyncio.to_thread(mark_preprocess_task_done, task.id, len(resolved_items))
         logger.info(
