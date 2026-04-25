@@ -13,7 +13,7 @@ from src.task.daily import scheduler,apscheduler_start
 from src.bulletin.router import router as bulletin_router
 from src.dev.router import router as dev_router
 from src.auth.router import router as auth_router
-from src.json.router import router as json_router
+from src.annotation.router import router as annotation_router
 from src.preprocess.router import router as preprocess_router
 from src.preprocess.service import ensure_preprocess_task_table, recover_interrupted_preprocess_tasks
 from src.preprocess.worker import start_preprocess_worker, stop_preprocess_worker
@@ -67,7 +67,7 @@ setup_cors_middleware(app)
 app.include_router(bulletin_router, prefix="/bulletins", tags=["公告"])
 app.include_router(dev_router, prefix="/dev", tags=["开发"])
 app.include_router(auth_router, prefix="/auth", tags=["认证"])
-app.include_router(json_router, prefix="/json", tags=["标注"])
+app.include_router(annotation_router, prefix="/annotations", tags=["标注"])
 app.include_router(preprocess_router, prefix="/preprocess", tags=["预处理"])
 
 

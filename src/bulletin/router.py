@@ -184,6 +184,7 @@ def list_all_bulletins(
         [
             BulletinListItem(
                 id=bulletin.id,
+                uuid=bulletin.uuid,
                 name=bulletin.name,
                 href=bulletin.href,
                 date=bulletin.date,

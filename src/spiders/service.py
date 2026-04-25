@@ -21,8 +21,8 @@ from src.bulletin.models import BulletinDB
 from src.bulletin.schemas import ContentTotal, ParagraphTopic
 from src.bulletin.service import query_bulletin
 from src.bulletin_list.schemas import BulletinType, DownloadBulletin
-from src.json.schemas import LlmJson
-from src.json.service import save_llm_json_records
+from src.annotation.schemas import LlmAnnotation
+from src.annotation.service import save_preprocess_annotation_records
 from src.bulletin_list.models import BulletinList
 from src.bulletin_list.service import get_really_bulletin_date, get_bulletin_type
 from src.nlp.service import (
@@ -168,20 +168,22 @@ def _persist_paragraph_labels(
     valid_texts: list[str],
     categories: list[str],
     source_id: str,
+    bulletin_uuid: str | None,
     bulletin_name: str | None,
     bulletin_date: str,
 ) -> None:
     """保存逐段分类结果，供后续人工修正。"""
     if not source_id:
-        logger.warning("source_id 为空，跳过 llm.json 写入")
+        logger.warning("source_id 为空，跳过 LLM 预处理记录写入")
         return
 
-    records: list[LlmJson] = []
+    records: list[LlmAnnotation] = []
     for index, (paragraph_text, category) in enumerate(zip(valid_texts, categories)):
         paragraph_topic = ParagraphTopic(category)
         records.append(
-            LlmJson(
+            LlmAnnotation(
                 source_id=source_id,
+                bulletin_uuid=bulletin_uuid,
                 bulletin_name=bulletin_name,
                 bulletin_date=bulletin_date,
                 paragraph_index=index,
@@ -190,8 +192,8 @@ def _persist_paragraph_labels(
                 corrected_label=paragraph_topic,
             )
         )
-    save_llm_json_records(records, source_id)
-    logger.info("llm.json 写入完成: source_id=%s, count=%d", source_id, len(records))
+    save_preprocess_annotation_records(records, source_id, bulletin_uuid)
+    logger.info("LLM 预处理记录写入完成: source_id=%s, count=%d", source_id, len(records))
 
 
 
@@ -263,6 +265,7 @@ def _resolve_paragraphs(
     use_lm_studio: bool = False,
     save_json: bool = False,
     source_id: str = "",
+    bulletin_uuid: str | None = None,
     bulletin_name: str | None = None,
     bulletin_date: str = "",
 ):
@@ -331,6 +334,7 @@ def _resolve_paragraphs(
             valid_texts,
             categories,
             source_id,
+            bulletin_uuid,
             bulletin_name,
             bulletin_date,
         )
@@ -363,7 +367,7 @@ def resolve_notice(
         content_path (Path | None): 公告content.html的路径
         bulletin_info (DownloadBulletin): 公告信息
         use_lm_studio (bool, optional): 是否使用 LM Studio 模型分类. Defaults to False.
-        save_json (bool, optional): 是否保存json文件. Defaults to False.
+        save_json (bool, optional): 是否保存逐段标注记录. Defaults to False.
 
     Returns:
         BulletinDB | None: 解析后的公告对象，如果解析失败则返回None
@@ -376,6 +380,7 @@ def resolve_notice(
         # 获取基础公告信息
         base_bulletin: BulletinDB = query_bulletin(bulletin_info=bulletin_info)
         source_id = _build_source_id(bulletin_info)
+        bulletin_uuid = bulletin_info.uuid if isinstance(bulletin_info, BulletinList) else None
 
         # 读取并解析HTML内容
         content: str = content_path.read_text(encoding="utf-8")
@@ -386,6 +391,7 @@ def resolve_notice(
                 use_lm_studio=use_lm_studio,
                 save_json=save_json,
                 source_id=source_id,
+                bulletin_uuid=bulletin_uuid,
                 bulletin_name=bulletin_info.name,
                 bulletin_date=bulletin_info.date,
             )

@@ -21,6 +21,7 @@ class LlmPreprocessRecord(SQLModel, table=True):
 
     id: int | None = Field(default=None, primary_key=True)
     source_id: str = Field(index=True)
+    bulletin_uuid: str | None = Field(default=None, index=True)
     bulletin_name: str | None = None
     bulletin_date: str = Field(index=True)
     paragraph_index: int = Field(index=True)
@@ -37,6 +38,7 @@ class LlmReviewRecord(SQLModel, table=True):
 
     id: int | None = Field(default=None, primary_key=True)
     source_id: str = Field(index=True)
+    bulletin_uuid: str | None = Field(default=None, index=True)
     bulletin_name: str | None = None
     bulletin_date: str = Field(index=True)
     paragraph_index: int = Field(index=True)

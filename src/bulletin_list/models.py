@@ -3,6 +3,8 @@
 该模块定义了公告列表相关的数据模型
 
 """
+from uuid import uuid4
+
 from sqlmodel import Field, SQLModel
 from src.bulletin_list.schemas import BulletinType
 
@@ -21,6 +23,7 @@ class BulletinList(SQLModel, table=True):
     """
     __tablename__: str = "bulletin_list" # type: ignore
     id: int | None = Field(default=None, primary_key=True)
+    uuid: str = Field(default_factory=lambda: str(uuid4()), unique=True, index=True)
     name: str = Field(index=True)
     href: str = Field(unique=True)
     date: str = Field(index=True)

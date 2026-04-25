@@ -94,6 +94,7 @@ class BulletinListItem(BaseModel):
     """公告列表页返回的简要公告信息。"""
 
     id: int | None
+    uuid: str
     name: str
     href: str
     date: str

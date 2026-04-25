@@ -29,13 +29,13 @@ router = APIRouter(
 async def test_resolve(
     test_date: Annotated[str | None, Query(alias="testDate")] = "2018-08-16",
     use_lm_studio: Annotated[bool, Query(alias="useLmStudio")] = True,
-    save_json: Annotated[bool, Query(alias="saveJson")] = True
+    save_json: Annotated[bool, Query(alias="saveAnnotation")] = True
 ) -> Response[list[BulletinDB]]:
     """测试解析公告的路由
     Args:
         test_date (str | None): 测试的日期，默认为None, 表示测试所有公告
         use_lm_studio (bool): 是否使用 LM Studio 模型分类，默认为 True
-        save_json (bool): 是否保存解析后的公告数据到 JSON 文件，默认为 True
+        save_json (bool): 是否保存逐段分类结果，供后续人工复核，默认为 True
     """
     try:
         res_list: list[BulletinDB] = run_preprocess_task(test_date, use_lm_studio, save_json)

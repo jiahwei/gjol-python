@@ -1,4 +1,4 @@
-"""json模块数据类型
+"""标注模块数据类型
 
 """
 from enum import Enum
@@ -16,10 +16,10 @@ class Status(Enum):
 
 
 
-class LlmJson(BaseModel):
-    """deepseek-r1:14b解析后的公告数据
-    """
+class LlmAnnotation(BaseModel):
+    """大模型解析后的公告段落标注数据。"""
     source_id: str = ""
+    bulletin_uuid: str | None = None
     bulletin_name: str | None = None
     bulletin_date: str
     paragraph_index: int = 0
@@ -30,12 +30,11 @@ class LlmJson(BaseModel):
     review_note: str = ""
 
 
-class LlmJsonList(BaseModel):
-    """deepseek-r1:14b解析后的公告数据列表
-    """
-    llm_json_list: list[LlmJson] = Field(default_factory=list)
+class LlmAnnotationList(BaseModel):
+    """大模型解析后的公告段落标注数据列表。"""
+
+    annotations: list[LlmAnnotation] = Field(default_factory=list)
 
 
-class LlmJsonMap(RootModel[dict[str, list[LlmJson]]]):
-    """deepseek-r1:14b解析后的公告数据映射
-    """
+class LlmAnnotationMap(RootModel[dict[str, list[LlmAnnotation]]]):
+    """按 source_id 分组的大模型公告段落标注数据。"""

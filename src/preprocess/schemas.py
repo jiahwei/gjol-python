@@ -22,7 +22,7 @@ class CreatePreprocessTaskPayload(BaseModel):
     target_date: str = Field(alias="targetDate")
     target_name: str | None = Field(default=None, alias="targetName")
     use_lm_studio: bool = Field(default=True, alias="useLmStudio")
-    save_json: bool = Field(default=True, alias="saveJson")
+    save_json: bool = Field(default=True, alias="saveAnnotation")
     model_name: str | None = Field(default=None, alias="modelName")
 
 
@@ -36,7 +36,7 @@ class PreprocessTask(BaseModel):
     target_date: str = Field(alias="targetDate")
     target_name: str | None = Field(default=None, alias="targetName")
     use_lm_studio: bool = Field(alias="useLmStudio")
-    save_json: bool = Field(alias="saveJson")
+    save_json: bool = Field(alias="saveAnnotation")
     model_name: str | None = Field(default=None, alias="modelName")
     status: PreprocessTaskStatus
     created_at: str = Field(alias="createdAt")
