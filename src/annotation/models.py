@@ -1,6 +1,7 @@
 """标注模块数据库模型。"""
 
 from datetime import UTC, datetime, timedelta, timezone
+from typing import Any, ClassVar
 
 from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, SQLModel
@@ -16,8 +17,10 @@ def now_beijing_naive() -> datetime:
 class LlmPreprocessRecord(SQLModel, table=True):
     """机器预处理结果表。"""
 
-    __tablename__ = "llm_preprocess_record"
-    __table_args__ = (UniqueConstraint("source_id", "paragraph_index"),)
+    __tablename__: ClassVar[str] = "llm_preprocess_record"  # pyright: ignore[reportIncompatibleVariableOverride]
+    __table_args__: ClassVar[tuple[Any, ...]] = (
+        UniqueConstraint("source_id", "paragraph_index"),
+    )
 
     id: int | None = Field(default=None, primary_key=True)
     source_id: str = Field(index=True)
@@ -33,8 +36,10 @@ class LlmPreprocessRecord(SQLModel, table=True):
 class LlmReviewRecord(SQLModel, table=True):
     """人工复核结果表。"""
 
-    __tablename__ = "llm_review_record"
-    __table_args__ = (UniqueConstraint("source_id", "paragraph_index"),)
+    __tablename__: ClassVar[str] = "llm_review_record"  # pyright: ignore[reportIncompatibleVariableOverride]
+    __table_args__: ClassVar[tuple[Any, ...]] = (
+        UniqueConstraint("source_id", "paragraph_index"),
+    )
 
     id: int | None = Field(default=None, primary_key=True)
     source_id: str = Field(index=True)

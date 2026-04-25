@@ -4,6 +4,8 @@
 
 """
 
+from typing import ClassVar
+
 from sqlmodel import Field, SQLModel
 
 from src.bulletin_list.schemas import BulletinType
@@ -24,7 +26,7 @@ class BulletinDB(SQLModel, table=True):
         type: 公告类型
     """
 
-    __tablename__: str = "bulletin"
+    __tablename__: ClassVar[str] = "bulletin"  # pyright: ignore[reportIncompatibleVariableOverride]
     id: int | None = Field(default=None, primary_key=True)
     bulletin_date: str
     original_date: str

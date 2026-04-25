@@ -3,6 +3,7 @@
 该模块定义了公告列表相关的数据模型
 
 """
+from typing import ClassVar
 from uuid import uuid4
 
 from sqlmodel import Field, SQLModel
@@ -21,7 +22,7 @@ class BulletinList(SQLModel, table=True):
         date (str): 公告日期，格式为YYYY-MM-DD
         type (str): 公告类型，对应BulletinType的值
     """
-    __tablename__: str = "bulletin_list" # type: ignore
+    __tablename__: ClassVar[str] = "bulletin_list"  # pyright: ignore[reportIncompatibleVariableOverride]
     id: int | None = Field(default=None, primary_key=True)
     uuid: str = Field(default_factory=lambda: str(uuid4()), unique=True, index=True)
     name: str = Field(index=True)

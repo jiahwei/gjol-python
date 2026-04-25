@@ -1,5 +1,7 @@
 """预处理任务数据库模型。"""
 
+from typing import Any, ClassVar
+
 from sqlalchemy import Index, text
 from sqlmodel import Field, SQLModel
 
@@ -7,8 +9,8 @@ from sqlmodel import Field, SQLModel
 class PreprocessTaskRecord(SQLModel, table=True):
     """预处理任务队列表。"""
 
-    __tablename__ = "preprocess_tasks"
-    __table_args__ = (
+    __tablename__: ClassVar[str] = "preprocess_tasks"  # pyright: ignore[reportIncompatibleVariableOverride]
+    __table_args__: ClassVar[tuple[Any, ...]] = (
         Index(
             "uq_preprocess_tasks_active_date",
             "task_type",
